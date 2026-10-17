@@ -9,640 +9,436 @@ import type {
   STEMExperimentModuleDTO,
   StepVisionVerifyResponse,
 } from '@rekasains/shared-types';
-import {
-  computeAnalyticalGraphSeries,
-  projectAROverlayToViewport,
-} from '../lib/ar-and-pdf-engine';
+import { computeAnalyticalGraphSeries, projectAROverlayToViewport } from '../lib/ar-and-pdf-engine';
 import { verifyExperimentStepVision } from '../lib/api-client';
+import { severityLabel } from '../lib/labels';
+import type { PreparedImage } from '../lib/image';
+import { PhotoInput } from './PhotoInput';
+import { Button, Panel, Pill, inputClass } from './ui';
+
+export type StepCheckMode = 'AI_VISION' | 'MANUAL';
 
 interface AdaptiveSTEMModuleProps {
   region: RegionCode;
   ageLevel: AgeAdaptiveLevelEnum;
-  isOfflineMode: boolean;
   module: STEMExperimentModuleDTO;
   observationRows: ObservationDataRowDTO[];
-  onAgeLevelChange: (level: AgeAdaptiveLevelEnum) => void;
   onObservationRowsChange: (rows: ObservationDataRowDTO[]) => void;
-  onStepVerified: (stepNumber: number, mode: 'AI_VISION' | 'OFFLINE_MANUAL') => void;
+  verifiedSteps: Record<number, StepCheckMode>;
+  onStepVerified: (stepNumber: number, mode: StepCheckMode) => void;
+  quizAnswers: Record<string, number>;
+  onQuizAnswer: (questionId: string, optionIndex: number) => void;
 }
 
-const AGE_LEVEL_LABELS: Record<AgeAdaptiveLevelEnum, { id: string; my: string }> = {
-  SD_ELEMENTARY: {
-    id: '🎒 SD (Fase A–C • Fenomena Visual)',
-    my: '🎒 Sekolah Rendah (Darjah 1–6 • Visual)',
-  },
-  SMP_LOWER_SEC: {
-    id: '🔬 SMP (Fase D • Konsep & Kausalitas)',
-    my: '🔬 Menengah Rendah (Tingkatan 1–3)',
-  },
-  SMA_UPPER_SEC: {
-    id: '📐 SMA/SMK (Fase E–F • Rumus LaTeX & Grafik)',
-    my: '📐 Menengah Atas (Tingkatan 4–5 • Rumus & Graf)',
-  },
-  HIGHER_ED_UNI: {
-    id: '🎓 Mahasiswa / Perguruan Tinggi (Regresi & Galat)',
-    my: '🎓 Universiti / Matrikulasi (Analisis Kuantitatif)',
-  },
-};
+const VIEW_W = 560;
+const VIEW_H = 300;
+const GRAPH_W = 520;
+const GRAPH_H = 240;
+const GRAPH_PAD = 38;
+
+const EMPTY_OVERLAY: AROverlaySimulationDTO = { overlay_type: 'NONE', caption_local: '', vector_paths: [] };
 
 export function AdaptiveSTEMModuleAndARLab({
   region,
   ageLevel,
-  isOfflineMode,
   module,
   observationRows,
-  onAgeLevelChange,
   onObservationRowsChange,
+  verifiedSteps,
   onStepVerified,
+  quizAnswers,
+  onQuizAnswer,
 }: AdaptiveSTEMModuleProps) {
-  const [activeStepIdx, setActiveStepIdx] = useState(0);
-  const [verifyingStep, setVerifyingStep] = useState(false);
-  const [stepVerificationMap, setStepVerificationMap] = useState<
-    Record<number, StepVisionVerifyResponse>
-  >({});
-  const [manualOfflineSteps, setManualOfflineSteps] = useState<Record<number, boolean>>({});
-  const [selectedAnswers, setSelectedAnswers] = useState<Record<string, number>>({});
+  const [activeIdx, setActiveIdx] = useState(0);
+  const [verifying, setVerifying] = useState(false);
+  const [results, setResults] = useState<Record<number, StepVisionVerifyResponse>>({});
+  const [stepPhotos, setStepPhotos] = useState<Record<number, string>>({});
+  const [verifyError, setVerifyError] = useState<string | null>(null);
 
-  const isMY = region === 'MY';
-  const currentStep = module.steps[activeStepIdx] || module.steps[0];
-
-  const activeAROverlay: AROverlaySimulationDTO =
-    stepVerificationMap[currentStep?.step_number]?.ar_overlay_simulation ||
-    currentStep?.default_ar_overlay || {
-      overlay_type: 'NONE',
-      caption_local: '',
-      vector_paths: [],
-    };
-
-  const projectedVectors = useMemo(
-    () => projectAROverlayToViewport(activeAROverlay, 560, 280),
-    [activeAROverlay]
-  );
-
-  const analyticalGraph = useMemo(
-    () => computeAnalyticalGraphSeries(observationRows, 520, 240, 38),
+  const step = module.steps[activeIdx] ?? module.steps[0];
+  const overlay = (step && (results[step.step_number]?.ar_overlay_simulation ?? step.default_ar_overlay)) || EMPTY_OVERLAY;
+  const vectors = useMemo(() => projectAROverlayToViewport(overlay, VIEW_W, VIEW_H), [overlay]);
+  const graph = useMemo(
+    () => computeAnalyticalGraphSeries(observationRows, GRAPH_W, GRAPH_H, GRAPH_PAD),
     [observationRows]
   );
+  const variables = module.scientific_variables_and_graph;
+  const result = step ? results[step.step_number] : undefined;
+  const background = step ? stepPhotos[step.step_number] : undefined;
 
-  const handleCameraVerifyStep = async (stepNumber: number) => {
-    setVerifyingStep(true);
+  const verifyWithPhoto = async (photo: PreparedImage) => {
+    if (!step) return;
+    setStepPhotos((p) => ({ ...p, [step.step_number]: photo.dataUrl }));
+    setVerifying(true);
+    setVerifyError(null);
     try {
-      const response = await verifyExperimentStepVision(
-        module.experiment_slug,
-        stepNumber,
-        {
-          image_base64: `data:image/jpeg;base64,STEP_${stepNumber}_ASSEMBLY_SNAPSHOT`,
-          mime_type: 'image/jpeg',
-          region,
-          age_adaptive_level: ageLevel,
-        }
-      );
-      setStepVerificationMap((prev) => ({ ...prev, [stepNumber]: response }));
-      if (response.is_verified_correct) {
-        onStepVerified(stepNumber, 'AI_VISION');
-      }
+      const res = await verifyExperimentStepVision(module.experiment_slug, step.step_number, {
+        image_base64: photo.dataUrl,
+        mime_type: photo.mimeType,
+        region,
+        age_adaptive_level: ageLevel,
+      });
+      setResults((p) => ({ ...p, [step.step_number]: res }));
+      if (res.is_verified_correct) onStepVerified(step.step_number, 'AI_VISION');
+    } catch (err) {
+      setVerifyError(`Foto gagal diperiksa. ${err instanceof Error ? err.message : String(err)}`);
     } finally {
-      setVerifyingStep(false);
+      setVerifying(false);
     }
   };
 
-  const handleOfflineManualCheckpoint = (stepNumber: number) => {
-    setManualOfflineSteps((prev) => ({ ...prev, [stepNumber]: true }));
-    onStepVerified(stepNumber, 'OFFLINE_MANUAL');
+  const updateRow = (index: number, field: keyof ObservationDataRowDTO, raw: string) => {
+    onObservationRowsChange(
+      observationRows.map((row, i) => {
+        if (i !== index) return row;
+        if (field === 'notes') return { ...row, notes: raw };
+        const num = parseFloat(raw);
+        return { ...row, [field]: Number.isFinite(num) ? num : 0 };
+      })
+    );
   };
 
-  const handleUpdateObservationRow = (
-    index: number,
-    field: keyof ObservationDataRowDTO,
-    rawValue: string
-  ) => {
-    const updated = observationRows.map((row, idx) => {
-      if (idx !== index) return row;
-      if (field === 'notes') {
-        return { ...row, notes: rawValue };
-      }
-      const num = parseFloat(rawValue);
-      return {
-        ...row,
-        [field]: Number.isFinite(num) ? num : 0,
-      };
-    });
-    onObservationRowsChange(updated);
-  };
-
-  const handleAddTrialRow = () => {
-    const nextTrial = observationRows.length + 1;
+  const addRow = () =>
     onObservationRowsChange([
       ...observationRows,
-      {
-        trial_number: nextTrial,
-        x_value: nextTrial * 1.5,
-        y_value: nextTrial * 120,
-        notes: isMY ? `Cubaan ke-${nextTrial}` : `Pengukuran ke-${nextTrial}`,
-      },
+      { trial_number: observationRows.length + 1, x_value: 0, y_value: 0, notes: '' },
     ]);
-  };
+
+  const removeRow = (index: number) =>
+    onObservationRowsChange(
+      observationRows.filter((_, i) => i !== index).map((r, i) => ({ ...r, trial_number: i + 1 }))
+    );
+
+  const doneCount = module.steps.filter((s) => verifiedSteps[s.step_number]).length;
 
   return (
-    <section className="rounded-2xl border border-slate-700 bg-slate-900/90 p-5 shadow-xl">
-      {/* Header & USP #5 4-Level Age-Adaptive Filter */}
-      <div className="flex flex-col gap-3 border-b border-slate-800 pb-4">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <span className="inline-block rounded-full bg-purple-500/20 px-3 py-1 text-xs font-semibold text-purple-300">
-            USP #5, #6, #8 &amp; #9 • CurriculumScaffolderAgent + StepVisionAndARAgent
-          </span>
-          <span className="rounded-lg bg-slate-800 px-3 py-1 text-xs font-medium text-emerald-300">
-            📦 OfflineLabPack v{module.offline_pack_version} Tersimpan di IndexedDB
-          </span>
-        </div>
-
-        <h2 className="text-xl font-bold text-white">
-          3. {module.title_local}
-        </h2>
-
-        {/* 4-Level Age-Adaptive Filter Buttons */}
-        <div>
-          <div className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-slate-400">
-            {isMY
-              ? 'Pilih Tahap Kesukaran & Kedalaman Sains (USP #5):'
-              : 'Pilih Jenjang Kesulitan & Kedalaman Sains Adaptif (USP #5):'}
-          </div>
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
-            {(Object.keys(AGE_LEVEL_LABELS) as AgeAdaptiveLevelEnum[]).map((lvl) => (
-              <button
-                key={lvl}
-                type="button"
-                onClick={() => onAgeLevelChange(lvl)}
-                className={`rounded-xl border px-3 py-2 text-left text-xs font-bold transition ${
-                  ageLevel === lvl
-                    ? 'border-cyan-400 bg-cyan-500/20 text-white'
-                    : 'border-slate-700 bg-slate-800/60 text-slate-300 hover:border-slate-600'
-                }`}
-              >
-                {isMY ? AGE_LEVEL_LABELS[lvl].my : AGE_LEVEL_LABELS[lvl].id}
-              </button>
+    <div className="space-y-4">
+      <Panel title={module.title_local} description={module.curriculum_alignment.learning_objective}>
+        <dl className="grid gap-x-6 gap-y-3 text-sm sm:grid-cols-2">
+          {(
+            [
+              ['Sains', module.stem_concepts.science],
+              ['Teknologi', module.stem_concepts.technology],
+              ['Rekayasa', module.stem_concepts.engineering],
+              ['Matematika', module.stem_concepts.mathematics],
+            ] as const
+          ).map(([label, text]) => (
+            <div key={label}>
+              <dt className="text-xs font-medium text-stone-500">{label}</dt>
+              <dd className="mt-0.5 text-stone-800">{text}</dd>
+            </div>
+          ))}
+        </dl>
+        <p className="mt-4 border-t border-stone-100 pt-3 font-mono text-xs text-stone-400">
+          {module.curriculum_alignment.curriculum_code} · {module.curriculum_alignment.grade_level} ·{' '}
+          {module.curriculum_alignment.competency_code}
+        </p>
+        {module.safety_checks.length > 0 && (
+          <ul className="mt-3 space-y-1.5">
+            {module.safety_checks.map((c) => (
+              <li key={c.rule_code} className="flex gap-2 text-sm text-stone-700">
+                <Pill tone={c.severity === 'SAFE' ? 'neutral' : 'warn'} className="shrink-0">
+                  {severityLabel(c.severity)}
+                </Pill>
+                <span>{c.message_local}</span>
+              </li>
             ))}
-          </div>
-        </div>
-      </div>
+          </ul>
+        )}
+      </Panel>
 
-      {/* STEM Concepts Breakdown */}
-      <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-3">
-          <div className="text-xs font-bold text-cyan-400">🔬 SCIENCE</div>
-          <p className="mt-1 text-xs text-slate-200">{module.stem_concepts.science}</p>
-        </div>
-        <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-3">
-          <div className="text-xs font-bold text-emerald-400">💻 TECHNOLOGY</div>
-          <p className="mt-1 text-xs text-slate-200">{module.stem_concepts.technology}</p>
-        </div>
-        <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-3">
-          <div className="text-xs font-bold text-amber-400">⚙️ ENGINEERING</div>
-          <p className="mt-1 text-xs text-slate-200">{module.stem_concepts.engineering}</p>
-        </div>
-        <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-3">
-          <div className="text-xs font-bold text-purple-400">📐 MATHEMATICS</div>
-          <p className="mt-1 font-mono text-xs text-slate-200">
-            {module.stem_concepts.mathematics}
-          </p>
-        </div>
-      </div>
-
-      {/* USP #8 & #9: Interactive Step-by-Step AI Vision Checker & HTML5 Canvas/SVG AR Overlay Simulation */}
-      <div className="mt-5 grid gap-5 lg:grid-cols-12">
-        {/* Step-by-Step Guidance & Vision Checkpoint */}
-        <div className="lg:col-span-6 rounded-xl border border-slate-700 bg-slate-950/70 p-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-bold uppercase tracking-wider text-cyan-300">
-              📸 {isMY ? 'Panduan Langkah & AI Vision Checker (USP #8)' : 'Panduan Langkah & AI Vision Step Checker (USP #8)'}
-            </h3>
-            <span className="text-xs text-slate-400">
-              Langkah {currentStep?.step_number} / {module.steps.length}
-            </span>
-          </div>
-
-          <div className="mt-3 flex gap-2">
-            {module.steps.map((st, idx) => {
-              const verified =
-                stepVerificationMap[st.step_number]?.is_verified_correct ||
-                manualOfflineSteps[st.step_number];
+      <Panel title="Langkah kerja" description={`${doneCount} dari ${module.steps.length} langkah selesai`}>
+        <div className="grid gap-4 lg:grid-cols-[220px_1fr]">
+          <ol className="space-y-1">
+            {module.steps.map((s, idx) => {
+              const mode = verifiedSteps[s.step_number];
               return (
-                <button
-                  key={st.step_number}
-                  type="button"
-                  onClick={() => setActiveStepIdx(idx)}
-                  className={`flex-1 rounded-lg py-1.5 text-xs font-bold transition ${
-                    activeStepIdx === idx
-                      ? 'bg-cyan-500 text-slate-950'
-                      : verified
-                      ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
-                      : 'bg-slate-800 text-slate-400'
-                  }`}
-                >
-                  {verified ? '✓ ' : ''}Langkah {st.step_number}
-                </button>
-              );
-            })}
-          </div>
-
-          {currentStep && (
-            <div className="mt-4 rounded-xl border border-slate-800 bg-slate-900 p-3.5">
-              <p className="text-sm font-medium text-white">{currentStep.instruction}</p>
-              {currentStep.requires_vision_verification && (
-                <p className="mt-1.5 text-xs text-cyan-300">
-                  🎯 <strong>Kriteria Kamera AI:</strong> {currentStep.vision_verification_prompt}
-                </p>
-              )}
-
-              <div className="mt-3 flex flex-wrap gap-2">
-                {currentStep.requires_vision_verification && (
+                <li key={s.step_number}>
                   <button
                     type="button"
-                    disabled={verifyingStep}
-                    onClick={() => handleCameraVerifyStep(currentStep.step_number)}
-                    className="rounded-xl bg-cyan-500 px-3.5 py-2 text-xs font-bold text-slate-950 hover:bg-cyan-400"
+                    onClick={() => setActiveIdx(idx)}
+                    className={`flex w-full items-center justify-between rounded px-2.5 py-1.5 text-left text-sm ${
+                      idx === activeIdx ? 'bg-stone-100 font-medium text-stone-900' : 'text-stone-600 hover:bg-stone-50'
+                    }`}
                   >
-                    {verifyingStep
-                      ? 'Menganalisis Rakitan...'
-                      : isMY
-                      ? '📷 Sahkan Langkah Ini dengan Kamera AI'
-                      : '📷 Verifikasi Langkah Ini dengan Kamera AI'}
+                    <span>Langkah {s.step_number}</span>
+                    {mode && <span className="text-xs text-emerald-700">{mode === 'AI_VISION' ? 'terverifikasi' : 'manual'}</span>}
                   </button>
-                )}
+                </li>
+              );
+            })}
+          </ol>
 
-                {/* Hybrid Smart Checkpoint Offline Fallback (FEAT-002 Edge Case #1) */}
-                <button
-                  type="button"
-                  onClick={() => handleOfflineManualCheckpoint(currentStep.step_number)}
-                  className="rounded-xl border border-slate-600 bg-slate-800 px-3 py-2 text-xs font-semibold text-slate-200 hover:bg-slate-700"
-                >
-                  ✓ {isOfflineMode ? 'Konfirmasi Mandiri (Mode Offline Aktif)' : 'Lanjut Manual / Mode Offline'}
-                </button>
-              </div>
+          {step && (
+            <div className="space-y-4">
+              <p className="text-sm leading-relaxed text-stone-800">{step.instruction}</p>
 
-              {stepVerificationMap[currentStep.step_number] && (
-                <div className="mt-3 rounded-lg border border-emerald-500/50 bg-emerald-950/40 p-3 text-xs text-emerald-200">
-                  <div className="font-bold">
-                    ✅ AI Vision Confidence:{' '}
-                    {Math.round(stepVerificationMap[currentStep.step_number].confidence * 100)}%
+              {step.requires_vision_verification && (
+                <div className="rounded-md border border-stone-200 p-3">
+                  <p className="text-xs font-medium text-stone-500">Cek dengan foto</p>
+                  <p className="mt-0.5 text-sm text-stone-600">{step.vision_verification_prompt}</p>
+                  <div className="mt-3">
+                    <PhotoInput onPhoto={verifyWithPhoto} disabled={verifying} captureLabel="Ambil & cek" />
                   </div>
-                  <p className="mt-1">
-                    {stepVerificationMap[currentStep.step_number].feedback_message_local}
-                  </p>
+                  {verifying && <p className="mt-2 text-sm text-stone-500">Gemini memeriksa foto…</p>}
+                  {verifyError && !verifying && <p className="mt-2 text-sm text-red-700">{verifyError}</p>}
+                  {result && !verifying && (
+                    <div
+                      className={`mt-3 rounded border p-2.5 text-sm ${
+                        result.is_verified_correct
+                          ? 'border-emerald-200 bg-emerald-50 text-emerald-900'
+                          : 'border-amber-200 bg-amber-50 text-amber-900'
+                      }`}
+                    >
+                      {result.feedback_message_local}
+                      <span className="ml-1 tabular-nums text-xs opacity-70">
+                        (keyakinan {Math.round(result.confidence * 100)}%)
+                      </span>
+                    </div>
+                  )}
                 </div>
               )}
 
-              {manualOfflineSteps[currentStep.step_number] &&
-                !stepVerificationMap[currentStep.step_number] && (
-                  <div className="mt-3 rounded-lg border border-amber-500/50 bg-amber-950/30 p-2.5 text-xs text-amber-200">
-                    ✓ Langkah {currentStep.step_number} dikonfirmasi via Hybrid Offline Checkpoint.
-                  </div>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  onClick={() => onStepVerified(step.step_number, 'MANUAL')}
+                  disabled={Boolean(verifiedSteps[step.step_number])}
+                >
+                  {verifiedSteps[step.step_number] ? 'Selesai' : 'Tandai selesai'}
+                </Button>
+                {activeIdx < module.steps.length - 1 && (
+                  <Button variant="ghost" onClick={() => setActiveIdx(activeIdx + 1)}>
+                    Langkah berikutnya
+                  </Button>
                 )}
+              </div>
+
+              {vectors.length > 0 && (
+                <figure className="space-y-2">
+                  <svg
+                    viewBox={`0 0 ${VIEW_W} ${VIEW_H}`}
+                    className="w-full rounded-md border border-stone-200 bg-stone-50"
+                    role="img"
+                    aria-label={overlay.caption_local}
+                  >
+                    <defs>
+                      {vectors.map((v, i) => (
+                        <marker
+                          key={i}
+                          id={`arrow-${i}`}
+                          markerWidth="8"
+                          markerHeight="8"
+                          refX="6"
+                          refY="3"
+                          orient="auto"
+                        >
+                          <path d="M0,0 L0,6 L7,3 z" fill={v.colorHex} />
+                        </marker>
+                      ))}
+                    </defs>
+                    {background && (
+                      <image href={background} x="0" y="0" width={VIEW_W} height={VIEW_H} preserveAspectRatio="xMidYMid slice" opacity="0.85" />
+                    )}
+                    {vectors.map((v, i) => (
+                      <g key={`${v.label}-${i}`}>
+                        <path
+                          d={v.svgPathD}
+                          stroke={v.colorHex}
+                          strokeWidth="3"
+                          fill="none"
+                          strokeDasharray={v.animationStyle === 'FLOWING_PARTICLES' ? '8 8' : undefined}
+                          className={v.animationStyle === 'FLOWING_PARTICLES' ? 'animate-dash-flow' : undefined}
+                          markerEnd={`url(#arrow-${i})`}
+                        />
+                        <text
+                          x={v.midX}
+                          y={v.midY - 10}
+                          textAnchor="middle"
+                          fontSize="12"
+                          fill="#292524"
+                          stroke="#fafaf9"
+                          strokeWidth="3"
+                          paintOrder="stroke"
+                        >
+                          {v.label}
+                        </text>
+                      </g>
+                    ))}
+                  </svg>
+                  <figcaption className="text-xs text-stone-500">
+                    {overlay.caption_local} Posisi panah adalah ilustrasi konsep, belum ditautkan ke objek di foto.
+                  </figcaption>
+                </figure>
+              )}
             </div>
           )}
         </div>
+      </Panel>
 
-        {/* USP #9: Augmented Reality (AR) Overlay Simulation Canvas/SVG */}
-        <div className="lg:col-span-6 rounded-xl border border-cyan-500/40 bg-slate-950/90 p-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-bold uppercase tracking-wider text-cyan-300">
-              🕶️ {isMY ? 'Simulasi AR Overlay Benda Nyata (USP #9)' : 'Simulasi AR Overlay di Atas Benda Nyata (USP #9)'}
-            </h3>
-            <span className="rounded bg-cyan-500/20 px-2 py-0.5 text-xs font-mono text-cyan-300">
-              {activeAROverlay.overlay_type}
-            </span>
+      <Panel
+        title="Data pengamatan"
+        actions={<Button onClick={addRow}>Tambah percobaan</Button>}
+      >
+        {variables && (
+          <div className="mb-4 grid gap-3 text-sm sm:grid-cols-3">
+            <div>
+              <p className="text-xs font-medium text-stone-500">Variabel bebas</p>
+              <p className="text-stone-800">{variables.independent_variable}</p>
+            </div>
+            <div>
+              <p className="text-xs font-medium text-stone-500">Variabel terikat</p>
+              <p className="text-stone-800">{variables.dependent_variable}</p>
+            </div>
+            <div>
+              <p className="text-xs font-medium text-stone-500">Variabel kontrol</p>
+              <p className="text-stone-800">{variables.control_variables.join(', ')}</p>
+            </div>
+            <div className="sm:col-span-3">
+              <p className="text-xs font-medium text-stone-500">Rumus</p>
+              <div className="mt-1 flex flex-wrap gap-2">
+                {variables.formulas_latex.map((f) => (
+                  <code key={f} className="rounded bg-stone-100 px-2 py-0.5 font-mono text-xs text-stone-800">
+                    {f}
+                  </code>
+                ))}
+              </div>
+            </div>
           </div>
+        )}
 
-          <p className="mt-1 text-xs text-slate-300">{activeAROverlay.caption_local}</p>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead className="text-xs text-stone-500">
+              <tr className="border-b border-stone-200">
+                <th className="py-2 pr-2 font-medium">#</th>
+                <th className="py-2 pr-2 font-medium">{variables?.x_axis_label ?? 'x'}</th>
+                <th className="py-2 pr-2 font-medium">{variables?.y_axis_label ?? 'y'}</th>
+                <th className="py-2 pr-2 font-medium">Catatan</th>
+                <th className="py-2" />
+              </tr>
+            </thead>
+            <tbody>
+              {observationRows.map((row, i) => (
+                <tr key={i}>
+                  <td className="py-1 pr-2 tabular-nums text-stone-500">{row.trial_number}</td>
+                  <td className="py-1 pr-2">
+                    <input
+                      type="number"
+                      step="any"
+                      value={row.x_value}
+                      onChange={(e) => updateRow(i, 'x_value', e.target.value)}
+                      className={`${inputClass} !w-24`}
+                    />
+                  </td>
+                  <td className="py-1 pr-2">
+                    <input
+                      type="number"
+                      step="any"
+                      value={row.y_value}
+                      onChange={(e) => updateRow(i, 'y_value', e.target.value)}
+                      className={`${inputClass} !w-24`}
+                    />
+                  </td>
+                  <td className="py-1 pr-2">
+                    <input
+                      type="text"
+                      value={row.notes}
+                      onChange={(e) => updateRow(i, 'notes', e.target.value)}
+                      className={inputClass}
+                    />
+                  </td>
+                  <td className="py-1 text-right">
+                    <Button variant="ghost" onClick={() => removeRow(i)}>
+                      Hapus
+                    </Button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
 
-          {/* Interactive SVG/Canvas Coordinate-Anchored AR Viewport */}
-          <div className="mt-3 overflow-hidden rounded-xl border border-slate-700 bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900">
-            <svg
-              viewBox="0 0 560 280"
-              className="h-60 w-full"
-              aria-label="AR Simulation Overlay Viewport"
-            >
-              <defs>
-                <marker
-                  id="ar-arrow-cyan"
-                  markerWidth="10"
-                  markerHeight="10"
-                  refX="7"
-                  refY="3"
-                  orient="auto"
-                >
-                  <path d="M0,0 L0,6 L9,3 z" fill="#00E5FF" />
-                </marker>
-                <marker
-                  id="ar-arrow-emerald"
-                  markerWidth="10"
-                  markerHeight="10"
-                  refX="7"
-                  refY="3"
-                  orient="auto"
-                >
-                  <path d="M0,0 L0,6 L9,3 z" fill="#10B981" />
-                </marker>
-              </defs>
-
-              {/* Simulated Physical Objects on Workbench (Battery AA + Recycled Aluminum Can + Jumper Wires) */}
-              <rect
-                x="55"
-                y="95"
-                width="120"
-                height="90"
-                rx="10"
-                fill="#1E293B"
-                stroke="#64748B"
-                strokeWidth="2"
+        {graph.points.length > 1 && (
+          <figure className="mt-4">
+            <svg viewBox={`0 0 ${GRAPH_W} ${GRAPH_H}`} className="w-full rounded-md border border-stone-200 bg-white">
+              <line x1={GRAPH_PAD} y1={GRAPH_H - GRAPH_PAD} x2={GRAPH_W - GRAPH_PAD} y2={GRAPH_H - GRAPH_PAD} stroke="#a8a29e" />
+              <line x1={GRAPH_PAD} y1={GRAPH_PAD / 2} x2={GRAPH_PAD} y2={GRAPH_H - GRAPH_PAD} stroke="#a8a29e" />
+              <line
+                x1={graph.regressionLine.x1Svg}
+                y1={graph.regressionLine.y1Svg}
+                x2={graph.regressionLine.x2Svg}
+                y2={graph.regressionLine.y2Svg}
+                stroke="#0f766e"
+                strokeWidth="1.5"
+                strokeDasharray="5 4"
               />
-              <rect x="175" y="122" width="12" height="36" rx="3" fill="#F59E0B" />
-              <text x="72" y="138" fill="#F8FAFC" fontSize="12" fontWeight="bold">
-                Baterai AA 1.5V
-              </text>
-              <text x="72" y="158" fill="#94A3B8" fontSize="11">
-                (-) Negatif | Positif (+)
-              </text>
-
-              <rect
-                x="380"
-                y="85"
-                width="125"
-                height="110"
-                rx="16"
-                fill="#334155"
-                stroke="#94A3B8"
-                strokeWidth="2"
-              />
-              <text x="395" y="136" fill="#F8FAFC" fontSize="12" fontWeight="bold">
-                Kaleng Aluminium
-              </text>
-              <text x="395" y="156" fill="#38BDF8" fontSize="10">
-                Konduktor Terkupas
-              </text>
-
-              {/* Coordinate-Anchored Animated AR Vector Paths */}
-              {projectedVectors.map((vec, index) => (
-                <g key={`${vec.label}-${index}`}>
-                  <path
-                    d={vec.svgPathD}
-                    stroke={vec.colorHex}
-                    strokeWidth="4"
-                    strokeDasharray={
-                      vec.animationStyle === 'FLOWING_PARTICLES' ? '10,6' : 'none'
-                    }
-                    markerEnd={
-                      index % 2 === 0 ? 'url(#ar-arrow-cyan)' : 'url(#ar-arrow-emerald)'
-                    }
-                  />
-                  <circle cx={vec.startX} cy={vec.startY} r="5" fill={vec.colorHex} />
-                  <circle cx={vec.endX} cy={vec.endY} r="5" fill={vec.colorHex} />
-                  <rect
-                    x={vec.midX - 85}
-                    y={vec.midY - 24}
-                    width="170"
-                    height="20"
-                    rx="4"
-                    fill="#0B132B"
-                    stroke={vec.colorHex}
-                    strokeWidth="1"
-                  />
-                  <text
-                    x={vec.midX}
-                    y={vec.midY - 10}
-                    textAnchor="middle"
-                    fill={vec.colorHex}
-                    fontSize="10"
-                    fontWeight="bold"
-                  >
-                    {vec.label}
+              {graph.points.map((pt) => (
+                <g key={pt.trialNumber}>
+                  <circle cx={pt.svgX} cy={pt.svgY} r="4" fill="#1c1917" />
+                  <text x={pt.svgX + 6} y={pt.svgY - 6} fontSize="10" fill="#57534e">
+                    ({pt.xValue}, {pt.yValue})
                   </text>
                 </g>
               ))}
+              <text x={GRAPH_W / 2} y={GRAPH_H - 8} textAnchor="middle" fontSize="11" fill="#78716c">
+                {variables?.x_axis_label ?? 'x'}
+              </text>
             </svg>
-          </div>
-        </div>
-      </div>
+            <figcaption className="mt-1 flex flex-wrap justify-between gap-2 text-xs text-stone-500">
+              <span>Sumbu y: {variables?.y_axis_label ?? 'y'}</span>
+              <span className="font-mono">
+                {graph.regressionLine.equationText} · R² = {graph.regressionLine.rSquared.toFixed(3)}
+              </span>
+            </figcaption>
+          </figure>
+        )}
+      </Panel>
 
-      {/* USP #5: SMA & Higher Ed Scientific Variables, LaTeX Equations, Observation Table & Analytical Graph */}
-      {module.scientific_variables_and_graph && (
-        <div className="mt-5 rounded-xl border border-purple-500/40 bg-purple-950/15 p-4">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <h3 className="text-sm font-bold uppercase tracking-wider text-purple-300">
-              📊 {isMY ? 'Rumus Fizik (LaTeX), Pembolehubah & Graf Analisis (SMA / Universiti)' : 'Rumus Fisika (LaTeX), Variabel Ilmiah & Grafik Analisis (SMA / Perguruan Tinggi)'}
-            </h3>
-            <div className="flex flex-wrap gap-2">
-              {module.scientific_variables_and_graph.formulas_latex.map((latex, idx) => (
-                <code
-                  key={idx}
-                  className="rounded bg-slate-900 px-2.5 py-1 text-xs font-bold text-cyan-300 border border-slate-700"
-                >
-                  {latex}
-                </code>
-              ))}
-            </div>
+      {module.reflection_questions.length > 0 && (
+        <Panel title="Pertanyaan refleksi">
+          <div className="space-y-5">
+            {module.reflection_questions.map((q, qi) => {
+              const chosen = quizAnswers[q.question_id];
+              return (
+                <fieldset key={q.question_id}>
+                  <legend className="text-sm font-medium text-stone-900">
+                    {qi + 1}. {q.prompt}
+                  </legend>
+                  <div className="mt-2 space-y-1.5">
+                    {q.options.map((opt, idx) => {
+                      const isChosen = chosen === idx;
+                      const tone =
+                        chosen === undefined || !isChosen
+                          ? 'border-stone-200 hover:bg-stone-50'
+                          : idx === q.correct_index
+                          ? 'border-emerald-400 bg-emerald-50'
+                          : 'border-red-300 bg-red-50';
+                      return (
+                        <label key={idx} className={`flex cursor-pointer gap-2 rounded border px-3 py-2 text-sm text-stone-800 ${tone}`}>
+                          <input
+                            type="radio"
+                            name={q.question_id}
+                            checked={isChosen}
+                            onChange={() => onQuizAnswer(q.question_id, idx)}
+                            className="mt-0.5"
+                          />
+                          {opt}
+                        </label>
+                      );
+                    })}
+                  </div>
+                  {chosen !== undefined && (
+                    <p className="mt-2 text-sm text-stone-600">
+                      {chosen === q.correct_index ? 'Benar. ' : 'Belum tepat. '}
+                      {q.explanation}
+                    </p>
+                  )}
+                </fieldset>
+              );
+            })}
           </div>
-
-          <div className="mt-3 grid gap-3 md:grid-cols-3 text-xs">
-            <div className="rounded-lg bg-slate-900/90 p-2.5 border border-slate-800">
-              <strong className="text-cyan-300">
-                {isMY ? 'Pembolehubah Manipulasi (Bebas):' : 'Variabel Bebas (Independent):'}
-              </strong>
-              <p className="mt-1 text-slate-200">
-                {module.scientific_variables_and_graph.independent_variable}
-              </p>
-            </div>
-            <div className="rounded-lg bg-slate-900/90 p-2.5 border border-slate-800">
-              <strong className="text-emerald-300">
-                {isMY ? 'Pembolehubah Bergerak Balas (Terikat):' : 'Variabel Terikat (Dependent):'}
-              </strong>
-              <p className="mt-1 text-slate-200">
-                {module.scientific_variables_and_graph.dependent_variable}
-              </p>
-            </div>
-            <div className="rounded-lg bg-slate-900/90 p-2.5 border border-slate-800">
-              <strong className="text-amber-300">
-                {isMY ? 'Pembolehubah Dimalarkan (Kontrol):' : 'Variabel Kontrol (Controlled):'}
-              </strong>
-              <p className="mt-1 text-slate-200">
-                {module.scientific_variables_and_graph.control_variables.join(', ')}
-              </p>
-            </div>
-          </div>
-
-          {/* Multi-Trial Observation Data Table & Live SVG Regression Plotter */}
-          <div className="mt-4 grid gap-4 lg:grid-cols-12">
-            <div className="lg:col-span-6">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-200">
-                  📋 {isMY ? 'Jadual Data Pemerhatian Multi-Trial' : 'Tabel Data Pengamatan Multi-Trial'}
-                </span>
-                <button
-                  type="button"
-                  onClick={handleAddTrialRow}
-                  className="rounded-lg bg-purple-500/30 px-2.5 py-1 text-xs font-bold text-purple-200 hover:bg-purple-500/40"
-                >
-                  + Tambah Trial
-                </button>
-              </div>
-              <table className="mt-2 w-full text-left text-xs text-slate-200">
-                <thead className="border-b border-slate-700 text-slate-400">
-                  <tr>
-                    <th className="py-1.5">Trial</th>
-                    <th className="py-1.5">{module.scientific_variables_and_graph.x_axis_label}</th>
-                    <th className="py-1.5">{module.scientific_variables_and_graph.y_axis_label}</th>
-                    <th className="py-1.5">{isMY ? 'Nota' : 'Catatan'}</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-800">
-                  {observationRows.map((row, idx) => (
-                    <tr key={row.trial_number}>
-                      <td className="py-1.5 font-bold">#{row.trial_number}</td>
-                      <td className="py-1.5 pr-2">
-                        <input
-                          type="number"
-                          step="0.1"
-                          value={row.x_value}
-                          onChange={(e) =>
-                            handleUpdateObservationRow(idx, 'x_value', e.target.value)
-                          }
-                          className="w-20 rounded border border-slate-700 bg-slate-900 px-2 py-1 text-white"
-                        />
-                      </td>
-                      <td className="py-1.5 pr-2">
-                        <input
-                          type="number"
-                          step="1"
-                          value={row.y_value}
-                          onChange={(e) =>
-                            handleUpdateObservationRow(idx, 'y_value', e.target.value)
-                          }
-                          className="w-24 rounded border border-slate-700 bg-slate-900 px-2 py-1 text-white"
-                        />
-                      </td>
-                      <td className="py-1.5">
-                        <input
-                          type="text"
-                          value={row.notes}
-                          onChange={(e) =>
-                            handleUpdateObservationRow(idx, 'notes', e.target.value)
-                          }
-                          className="w-full rounded border border-slate-700 bg-slate-900 px-2 py-1 text-white"
-                        />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            <div className="lg:col-span-6 rounded-xl border border-slate-700 bg-slate-950 p-3">
-              <div className="flex items-center justify-between text-xs">
-                <span className="font-bold text-cyan-300">
-                  📈 Grafik Regresi Linear Otomatis
-                </span>
-                <span className="font-mono text-emerald-300">
-                  {analyticalGraph.regressionLine.equationText}
-                </span>
-              </div>
-              <svg
-                viewBox="0 0 520 240"
-                className="mt-2 h-48 w-full rounded bg-slate-900"
-              >
-                <line
-                  x1="38"
-                  y1="202"
-                  x2="482"
-                  y2="202"
-                  stroke="#64748B"
-                  strokeWidth="1.5"
-                />
-                <line
-                  x1="38"
-                  y1="20"
-                  x2="38"
-                  y2="202"
-                  stroke="#64748B"
-                  strokeWidth="1.5"
-                />
-                <line
-                  x1={analyticalGraph.regressionLine.x1Svg}
-                  y1={analyticalGraph.regressionLine.y1Svg}
-                  x2={analyticalGraph.regressionLine.x2Svg}
-                  y2={analyticalGraph.regressionLine.y2Svg}
-                  stroke="#10B981"
-                  strokeWidth="2"
-                  strokeDasharray="6,4"
-                />
-                <polyline
-                  fill="none"
-                  stroke="#00E5FF"
-                  strokeWidth="2.5"
-                  points={analyticalGraph.polylinePointsAttr}
-                />
-                {analyticalGraph.points.map((pt) => (
-                  <g key={pt.trialNumber}>
-                    <circle cx={pt.svgX} cy={pt.svgY} r="5" fill="#F59E0B" />
-                    <text
-                      x={pt.svgX + 6}
-                      y={pt.svgY - 6}
-                      fill="#E2E8F0"
-                      fontSize="10"
-                    >
-                      ({pt.xValue}, {pt.yValue})
-                    </text>
-                  </g>
-                ))}
-              </svg>
-            </div>
-          </div>
-        </div>
+        </Panel>
       )}
-
-      {/* USP #6: Curriculum-Aligned Reflection Quiz */}
-      <div className="mt-5 border-t border-slate-800 pt-4">
-        <h3 className="text-sm font-bold uppercase tracking-wider text-emerald-300">
-          🧠 {isMY ? 'Soalan Diskusi & Refleksi Kurikulum (USP #6)' : 'Soal Diskusi & Refleksi Konsep STEM (USP #6)'}
-        </h3>
-        <div className="mt-3 grid gap-3 md:grid-cols-2">
-          {module.reflection_questions.map((q) => {
-            const chosen = selectedAnswers[q.question_id];
-            return (
-              <div
-                key={q.question_id}
-                className="rounded-xl border border-slate-800 bg-slate-950/60 p-3.5 text-xs"
-              >
-                <p className="font-bold text-white">{q.prompt}</p>
-                <div className="mt-2 space-y-1.5">
-                  {q.options.map((opt, idx) => (
-                    <button
-                      key={idx}
-                      type="button"
-                      onClick={() =>
-                        setSelectedAnswers((prev) => ({ ...prev, [q.question_id]: idx }))
-                      }
-                      className={`block w-full rounded-lg border px-3 py-1.5 text-left transition ${
-                        chosen === idx
-                          ? idx === q.correct_index
-                            ? 'border-emerald-500 bg-emerald-500/20 text-emerald-200'
-                            : 'border-red-500 bg-red-500/20 text-red-200'
-                          : 'border-slate-800 bg-slate-900 text-slate-300 hover:bg-slate-800'
-                      }`}
-                    >
-                      {opt}
-                    </button>
-                  ))}
-                </div>
-                {chosen !== undefined && (
-                  <p className="mt-2 text-slate-300">
-                    <strong>Penjelasan:</strong> {q.explanation}
-                  </p>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    </section>
+    </div>
   );
 }

@@ -14,7 +14,7 @@
 | **Sub-Part 1** | `packages/shared-types`, `packages/shared-core` | TypeScript DTOs (`openapi.yaml`), AR Coordinate Validator `[0.0, 1.0]`, Integer Currency Formatter (`IDR`/`MYR_SEN`) | 🟢 **COMPLETED** | Session `2026-10-17/11-35` | `2026-10-17 11:47` |
 | **Sub-Part 2** | `services/core-api` | Phase 1: Go 4-Layer Control Plane (Zero-RabbitMQ Direct REST/SSE), SQL Migrations `001`–`003` (Seed ID/MY), 3-Tier Set-Matcher, Functional Substitutes, Active Co-Location Hazard Matrix, Step Verify & Lab Report API | 🟢 **COMPLETED** | Session `2026-10-17/11-35` | `2026-10-17 11:47` |
 | **Sub-Part 3** | `services/ai-agent` | Phase 2: Python 3.12+ FastAPI + 6-Sub-Agent Google ADK (`VisionInventory`, `ResourceMatcher`, `CurriculumScaffolder`, `SafetyGuardian`, `StepVisionAndAR`, `LabReportSynthesizer`) | 🟢 **COMPLETED** | Sessions `11-40` & `11-47` | `2026-10-17 11:52` |
-| **Sub-Part 4** | `apps/web` | Phase 3: Next.js Mobile-First PWA, Camera Scanner, Active Hazard Banner, HTML5 Canvas/SVG AR Overlay, 4-Level Graph Plotter, IndexedDB Offline Lab Pack & Editable PDF Lab Report Exporter | 🟢 **COMPLETED** | Session `2026-10-17/11-38` | `2026-10-17 11:53` |
+| **Sub-Part 4** | `apps/web` | Phase 3: Next.js Mobile-First PWA, Camera Scanner, Active Hazard Banner, HTML5 Canvas/SVG AR Overlay, 4-Level Graph Plotter, IndexedDB Offline Lab Pack & Editable PDF Lab Report Exporter (UI/UX & Feature Overhaul) | 🔄 **IN-PROGRESS** | Session `2026-10-17/12-40` | `2026-10-17 12:40` |
 | **Sub-Part 5** | `deployments/`, `Makefile`, `Taskfile.yml` | Full-Stack Docker Compose (profiles `infra` & `full`), IaC Terraform, Makefile & Taskfile monorepo test commands | 🟢 **COMPLETED** | Session `2026-10-17/12-00` | `2026-10-17 12:01` |
 
 ---

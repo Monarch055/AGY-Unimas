@@ -1,11 +1,15 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'RekaSains — AI-Native STEM Lab, AR Inventory & Academic Lab Report PDF (ID & MY)',
+  title: 'RekaSains',
   description:
-    'Platform AI-Native STEM Lab & Physical-to-Digital Inventory Mapping berbasis Kurikulum Merdeka (Indonesia) & KSSR/KSSM (Malaysia) dengan 6-Sub-Agent Google ADK.',
+    'Ubah barang di sekitar menjadi eksperimen sains: pindai bahan, cek keamanan, pilih eksperimen, dan susun laporan praktikum.',
   manifest: '/manifest.json',
+};
+
+export const viewport: Viewport = {
+  themeColor: '#fafaf9',
 };
 
 export default function RootLayout({
@@ -15,9 +19,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="id">
-      <body className="min-h-screen bg-slate-950 text-slate-100 antialiased">
-        {children}
-      </body>
+      <body className="min-h-screen font-sans antialiased">{children}</body>
     </html>
   );
 }

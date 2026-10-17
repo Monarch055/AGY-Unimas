@@ -60,7 +60,7 @@ class ScanWorkspaceInventoryUseCase:
         self._event_bus = event_bus
 
     def execute(self, req: InventoryScanRequest) -> InventoryScanResponse:
-        detected_items = self._vision_agent.extract_inventory_from_image(req)
+        detected_items, engine = self._vision_agent.extract_inventory_with_engine(req)
         slugs = [item.material_slug for item in detected_items]
         active_hazards = self._safety_agent.evaluate_workspace_hazards(slugs, req.region)
 
@@ -68,6 +68,7 @@ class ScanWorkspaceInventoryUseCase:
             region=req.region,
             detected_items=detected_items,
             active_workspace_hazards=active_hazards,
+            inference_engine=engine,
         )
 
         self._event_bus.publish_event(

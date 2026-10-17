@@ -17,9 +17,14 @@ from datetime import datetime, timezone
 class AgentServiceConfig:
     port: int = int(os.getenv("AI_AGENT_PORT", os.getenv("PORT", "8081")))
     core_api_url: str = os.getenv("CORE_API_URL", "http://localhost:8080/v1")
-    gemini_api_key: str = os.getenv("GEMINI_API_KEY", "")
-    gemini_model: str = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
-    vision_model: str = os.getenv("GEMINI_VISION_MODEL", "gemini-2.5-flash")
+    # OpenAI-compatible chat completions endpoint used by every LLM-backed agent.
+    llm_base_url: str = os.getenv("LLM_BASE_URL", "")
+    llm_api_key: str = os.getenv("LLM_API_KEY", "")
+    llm_model: str = os.getenv("LLM_MODEL", "ag/gemini-3.8-flash")
+    vision_model: str = os.getenv("LLM_VISION_MODEL", os.getenv("LLM_MODEL", "ag/gemini-3.8-flash"))
+    # Kept as an alias so existing "is AI enabled" checks keep working.
+    gemini_api_key: str = os.getenv("LLM_API_KEY", "")
+    gemini_model: str = os.getenv("LLM_MODEL", "ag/gemini-3.8-flash")
     log_level: str = os.getenv("LOG_LEVEL", "INFO")
 
 

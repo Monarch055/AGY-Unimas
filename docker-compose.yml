@@ -68,7 +68,7 @@ services:
       DB_NAME: ${DB_NAME:-rekasains}
       REDIS_HOST: redis
       REDIS_PORT: "6379"
-      AI_AGENT_URL: http://ai-agent:8081/ai/v1
+      AI_AGENT_BASE_URL: http://ai-agent:8081/ai/v1
     ports:
       - "8080:8080"
     depends_on:
@@ -88,7 +88,10 @@ services:
       PORT: "8081"
       AI_AGENT_PORT: "8081"
       CORE_API_URL: http://core-api:8080/v1
-      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      LLM_BASE_URL: ${LLM_BASE_URL:-}
+      LLM_API_KEY: ${LLM_API_KEY:-}
+      LLM_MODEL: ${LLM_MODEL:-ag/gemini-3.8-flash}
+      LLM_VISION_MODEL: ${LLM_VISION_MODEL:-ag/gemini-3.8-flash}
     ports:
       - "8081:8081"
     depends_on:

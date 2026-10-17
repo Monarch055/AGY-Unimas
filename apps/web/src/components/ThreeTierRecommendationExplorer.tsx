@@ -7,203 +7,164 @@ import type {
   RecommendationMatchResponse,
   RegionCode,
 } from '@rekasains/shared-types';
+import { severityLabel, tierLabel } from '../lib/labels';
+import { Button, EmptyState, Panel, Pill } from './ui';
 
 interface ThreeTierExplorerProps {
   region: RegionCode;
   matchData: RecommendationMatchResponse;
-  selectedExperimentSlug: string;
+  selectedExperimentSlug: string | null;
   onSelectExperiment: (slug: string) => void;
 }
 
+const TIERS: MatchTierEnum[] = ['STRICT_100', 'DIY_SUBSTITUTE', 'LOCAL_MICRO_SHOP'];
+
+const TIER_HINT: Record<MatchTierEnum, string> = {
+  STRICT_100: 'Semua bahan sudah ada di inventaris.',
+  DIY_SUBSTITUTE: 'Ada bahan yang kurang, tapi bisa diganti dengan bahan yang kamu punya.',
+  LOCAL_MICRO_SHOP: 'Kurang 1–2 bahan murah yang bisa dibeli di toko terdekat.',
+};
+
 export function ThreeTierRecommendationExplorer({
-  region,
   matchData,
   selectedExperimentSlug,
   onSelectExperiment,
 }: ThreeTierExplorerProps) {
-  const [activeTier, setActiveTier] = useState<MatchTierEnum>('STRICT_100');
-  const isMY = region === 'MY';
-
-  const tierCards: Record<MatchTierEnum, ExperimentRecommendationCardDTO[]> = {
+  const lists: Record<MatchTierEnum, ExperimentRecommendationCardDTO[]> = {
     STRICT_100: matchData.strict_100_matches,
     DIY_SUBSTITUTE: matchData.diy_substitute_matches,
     LOCAL_MICRO_SHOP: matchData.local_micro_shop_matches,
   };
-
-  const currentList = tierCards[activeTier] || [];
+  const [tier, setTier] = useState<MatchTierEnum>(
+    TIERS.find((t) => lists[t].length > 0) ?? 'STRICT_100'
+  );
+  const cards = lists[tier] ?? [];
 
   return (
-    <section className="rounded-2xl border border-slate-700 bg-slate-900/90 p-5 shadow-xl">
-      <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-        <div>
-          <span className="inline-block rounded-full bg-emerald-500/20 px-3 py-1 text-xs font-semibold text-emerald-300">
-            USP #2, #3 &amp; #4 • ResourceMatcherAgent (3-Tier + Functional Substitutes)
-          </span>
-          <h2 className="mt-1 text-xl font-bold text-white">
-            {isMY
-              ? '2. Cadangan Eksperimen 3-Tier, Substitusi Fungsi & Kedai Sekitar (RM)'
-              : '2. Rekomendasi Eksperimen 3-Tier, Substitusi Bahan & Toko Sekitar (Rp)'}
-          </h2>
+    <div className="space-y-4">
+      {matchData.blocked_hazard_alerts.length > 0 && (
+        <div role="alert" className="rounded-lg border border-red-300 bg-red-50 p-4 text-sm text-red-800">
+          <p className="font-semibold text-red-900">
+            Ada bahan berbahaya di inventaris. Eksperimen yang memakainya tidak ditampilkan.
+          </p>
+          {matchData.blocked_hazard_alerts.map((a) => (
+            <p key={a.rule_code} className="mt-1">
+              {a.message_local}
+            </p>
+          ))}
         </div>
+      )}
 
-        {/* 3-Tier Selector Tabs */}
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={() => setActiveTier('STRICT_100')}
-            className={`rounded-xl px-3.5 py-2 text-xs font-bold transition ${
-              activeTier === 'STRICT_100'
-                ? 'bg-emerald-500 text-slate-950'
-                : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-            }`}
-          >
-            🟢 Tier 1: 100% Siap ({matchData.strict_100_matches.length})
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTier('DIY_SUBSTITUTE')}
-            className={`rounded-xl px-3.5 py-2 text-xs font-bold transition ${
-              activeTier === 'DIY_SUBSTITUTE'
-                ? 'bg-cyan-400 text-slate-950'
-                : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-            }`}
-          >
-            🛠️ Tier 2: Substitusi Fungsi / DIY ({matchData.diy_substitute_matches.length})
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTier('LOCAL_MICRO_SHOP')}
-            className={`rounded-xl px-3.5 py-2 text-xs font-bold transition ${
-              activeTier === 'LOCAL_MICRO_SHOP'
-                ? 'bg-amber-400 text-slate-950'
-                : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-            }`}
-          >
-            🛒 Tier 3: {isMY ? 'Kedai Runcit / MR.DIY (RM)' : 'Warung / Minimarket (Rp)'} (
-            {matchData.local_micro_shop_matches.length})
-          </button>
-        </div>
-      </div>
-
-      {/* Cards Grid */}
-      <div className="mt-4 grid gap-4 md:grid-cols-1">
-        {currentList.map((card) => {
-          const isSelected = card.experiment_slug === selectedExperimentSlug;
-          return (
-            <div
-              key={card.experiment_slug}
-              className={`rounded-xl border p-4 transition ${
-                isSelected
-                  ? 'border-cyan-400 bg-slate-800/90 ring-2 ring-cyan-400/40'
-                  : 'border-slate-700 bg-slate-800/50 hover:border-slate-500'
+      <Panel title="Eksperimen yang bisa dibuat" description={TIER_HINT[tier]}>
+        <div className="mb-4 flex flex-wrap gap-1 rounded-md bg-stone-100 p-1">
+          {TIERS.map((t) => (
+            <button
+              key={t}
+              type="button"
+              onClick={() => setTier(t)}
+              className={`flex-1 rounded px-3 py-1.5 text-sm transition-colors ${
+                tier === t ? 'bg-white font-medium text-stone-900 shadow-sm' : 'text-stone-600 hover:text-stone-900'
               }`}
             >
-              <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                <div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="rounded bg-cyan-500/20 px-2.5 py-0.5 text-xs font-bold text-cyan-300">
-                      {card.match_tier} • {card.match_percentage}% Match
-                    </span>
-                    <span className="rounded bg-slate-700 px-2.5 py-0.5 text-xs text-slate-200">
-                      {card.curriculum_badge}
-                    </span>
-                  </div>
-                  <h3 className="mt-2 text-lg font-bold text-white">{card.title_local}</h3>
-                </div>
+              {tierLabel(t)} <span className="tabular-nums text-stone-400">{lists[t].length}</span>
+            </button>
+          ))}
+        </div>
 
-                <button
-                  type="button"
-                  onClick={() => onSelectExperiment(card.experiment_slug)}
-                  className="shrink-0 rounded-xl bg-cyan-500 px-4 py-2 text-xs font-bold text-slate-950 hover:bg-cyan-400"
+        {cards.length === 0 ? (
+          <EmptyState>Tidak ada eksperimen di kategori ini untuk inventaris saat ini.</EmptyState>
+        ) : (
+          <ul className="space-y-3">
+            {cards.map((card) => {
+              const selected = card.experiment_slug === selectedExperimentSlug;
+              return (
+                <li
+                  key={card.experiment_slug}
+                  className={`rounded-md border p-4 ${
+                    selected ? 'border-stone-900' : 'border-stone-200'
+                  }`}
                 >
-                  {isSelected
-                    ? isMY
-                      ? '✓ Modul Aktif'
-                      : '✓ Modul Sedang Dibuka'
-                    : isMY
-                    ? 'Buka Modul & AR Lab →'
-                    : 'Buka Modul & AR Lab →'}
-                </button>
-              </div>
-
-              {/* USP #3: Automatic Alternative Material Recommender (Functional Physics/Chemistry Substitute) */}
-              {card.functional_substitutes.length > 0 && (
-                <div className="mt-3 rounded-lg border border-cyan-500/40 bg-cyan-950/30 p-3">
-                  <div className="text-xs font-bold uppercase tracking-wide text-cyan-300">
-                    🔄 {isMY ? 'Rekomendasi Substitusi Bahan Berfungsi Serupa (USP #3)' : 'Rekomendasi Substitusi Bahan Berfungsi Fisika/Kimia Serupa (USP #3)'}
-                  </div>
-                  {card.functional_substitutes.map((sub) => (
-                    <div key={sub.missing_material_slug} className="mt-2 text-xs text-slate-200">
-                      <p>
-                        <strong>{isMY ? 'Bahan Kurang' : 'Bahan Kurang'}:</strong>{' '}
-                        <span className="line-through text-amber-300">{sub.missing_name_local}</span>{' '}
-                        ➔ <strong>{isMY ? 'Diganti Dengan' : 'Disubstitusi Dengan'}:</strong>{' '}
-                        <span className="font-bold text-emerald-300">{sub.substitute_name_local}</span>
-                      </p>
-                      <p className="mt-1 text-cyan-200">
-                        <strong>Prinsip Ilmiah Setara:</strong> {sub.shared_scientific_principle}
-                      </p>
-                      <ul className="mt-1 list-disc pl-5 text-slate-300">
-                        {sub.adaptation_steps.map((step, idx) => (
-                          <li key={idx}>{step}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* USP #4: Hyper-Localized Low-Cost Store & Smart Deep-Links (ID Rp / MY RM) */}
-              {card.missing_local_shop_items.length > 0 && (
-                <div className="mt-3 rounded-lg border border-amber-500/40 bg-amber-950/20 p-3">
-                  <div className="text-xs font-bold uppercase tracking-wide text-amber-300">
-                    🛒 {isMY ? 'Panduan Belian Murah di Kedai Sekitar (USP #4)' : 'Panduan Belanja Bahan Murah di Toko Sekitar (USP #4)'}
-                  </div>
-                  <div className="mt-2 grid gap-2 md:grid-cols-2">
-                    {card.missing_local_shop_items.map((shop) => (
-                      <div
-                        key={shop.material_slug}
-                        className="rounded border border-slate-700 bg-slate-900/80 p-2.5 text-xs"
-                      >
-                        <div className="flex items-center justify-between font-bold text-white">
-                          <span>
-                            {shop.name_local} ({shop.missing_quantity} {shop.unit})
-                          </span>
-                          <span className="rounded bg-amber-400/20 px-2 py-0.5 text-amber-300">
-                            {shop.display_price}
-                          </span>
-                        </div>
-                        <p className="mt-1 text-slate-300">
-                          <strong>{isMY ? 'Kedai Disyorkan' : 'Toko Rekomendasi'}:</strong>{' '}
-                          {shop.recommended_stores.join(', ')}
-                        </p>
-                        <div className="mt-2 flex flex-wrap gap-2">
-                          <a
-                            href={shop.maps_search_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="rounded bg-slate-700 px-2.5 py-1 font-semibold text-cyan-300 hover:bg-slate-600"
-                          >
-                            📍 Cari di Google Maps
-                          </a>
-                          <a
-                            href={shop.marketplace_search_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="rounded bg-slate-700 px-2.5 py-1 font-semibold text-emerald-300 hover:bg-slate-600"
-                          >
-                            🛍️ {isMY ? 'Beli di Shopee MY' : 'Beli di Tokopedia / Shopee'}
-                          </a>
-                        </div>
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <h3 className="font-medium text-stone-900">{card.title_local}</h3>
+                      <p className="mt-0.5 text-sm text-stone-500">{card.curriculum_badge}</p>
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        <Pill>{card.match_percentage}% bahan cocok</Pill>
+                        <Pill tone={card.safety_severity === 'SAFE' ? 'ok' : 'warn'}>
+                          {severityLabel(card.safety_severity)}
+                        </Pill>
                       </div>
-                    ))}
+                    </div>
+                    <Button
+                      variant={selected ? 'primary' : 'secondary'}
+                      onClick={() => onSelectExperiment(card.experiment_slug)}
+                    >
+                      {selected ? 'Dipilih' : 'Pilih'}
+                    </Button>
                   </div>
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    </section>
+
+                  {card.functional_substitutes.length > 0 && (
+                    <div className="mt-3 space-y-2 border-t border-stone-100 pt-3">
+                      {card.functional_substitutes.map((s) => (
+                        <div key={s.missing_material_slug} className="text-sm">
+                          <p className="text-stone-800">
+                            <span className="text-stone-500 line-through">{s.missing_name_local}</span>
+                            {' → '}
+                            {s.substitute_name_local}
+                          </p>
+                          <p className="text-stone-500">{s.shared_scientific_principle}</p>
+                          {s.adaptation_steps.length > 0 && (
+                            <ol className="mt-1 list-decimal space-y-0.5 pl-5 text-stone-600">
+                              {s.adaptation_steps.map((step, i) => (
+                                <li key={i}>{step}</li>
+                              ))}
+                            </ol>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {card.missing_local_shop_items.length > 0 && (
+                    <table className="mt-3 w-full border-t border-stone-100 text-sm">
+                      <tbody className="divide-y divide-stone-100">
+                        {card.missing_local_shop_items.map((m) => (
+                          <tr key={m.material_slug}>
+                            <td className="py-2 pr-3 text-stone-800">
+                              {m.missing_quantity} {m.unit} {m.name_local}
+                              <div className="text-xs text-stone-500">{m.recommended_stores.join(' · ')}</div>
+                            </td>
+                            <td className="py-2 pr-3 tabular-nums text-stone-700">{m.display_price}</td>
+                            <td className="whitespace-nowrap py-2 text-right">
+                              <a
+                                href={m.maps_search_url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-stone-600 underline-offset-2 hover:underline"
+                              >
+                                Peta
+                              </a>
+                              <span className="px-1.5 text-stone-300">·</span>
+                              <a
+                                href={m.marketplace_search_url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-stone-600 underline-offset-2 hover:underline"
+                              >
+                                Toko online
+                              </a>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </Panel>
+    </div>
   );
 }

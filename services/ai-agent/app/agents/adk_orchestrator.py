@@ -53,6 +53,8 @@ from app.domain.models import (
     StepVisionVerifyRequest,
     StepVisionVerifyResponse,
 )
+from app.infrastructure.config import settings
+from app.infrastructure.gemini_vision import detect_inventory_with_gemini
 
 try:
     from google.adk.agents import LlmAgent, SequentialAgent  # type: ignore
@@ -126,6 +128,15 @@ class VisionInventoryAgent:
 
     agent_name = "VisionInventoryAgent"
     model_name = "gemini-2.5-flash"
+
+    def extract_inventory_with_engine(
+        self, req: InventoryScanRequest
+    ) -> tuple[List[InventoryItemDTO], str]:
+        """Real photos go to Gemini when a key is configured; sample payloads use the keyword rules."""
+        gemini_items = detect_inventory_with_gemini(req)
+        if gemini_items is not None:
+            return gemini_items, settings.vision_model
+        return self.extract_inventory_from_image(req), "rules"
 
     def extract_inventory_from_image(self, req: InventoryScanRequest) -> List[InventoryItemDTO]:
         hints = _decode_payload_text_hints(req.image_base64)
@@ -649,15 +660,23 @@ class LabReportSynthesizerAgent:
 
 def get_adk_agents_manifest() -> Dict[str, Any]:
     """Returns metadata about the 6 Google ADK Sub-Agents and runtime mode."""
-    gemini_key_configured = bool(os.getenv("GEMINI_API_KEY", "").strip())
+    gemini_key_configured = bool(os.getenv("LLM_API_KEY", "").strip())
     return {
         "service": "rekasains-ai-agent",
         "framework": "google-adk",
         "google_adk_sdk_installed": HAS_GOOGLE_ADK_SDK,
-        "execution_mode": (
-            "LIVE_GOOGLE_ADK_GEMINI"
-            if (HAS_GOOGLE_ADK_SDK and gemini_key_configured)
-            else "DUAL_MODE_DETERMINISTIC_ADK_FALLBACK"
+        # SafetyGuardianAgent always stays rule-based; the others use Gemini when a key is configured.
+        "execution_mode": "GEMINI" if gemini_key_configured else "RULES_ONLY",
+        "gemini_powered_agents": (
+            [
+                VisionInventoryAgent.agent_name,
+                ResourceMatcherAgent.agent_name,
+                CurriculumScaffolderAgent.agent_name,
+                StepVisionAndARAgent.agent_name,
+                LabReportSynthesizerAgent.agent_name,
+            ]
+            if gemini_key_configured
+            else []
         ),
         "broker_mode": "ZERO_RABBITMQ_DIRECT_REST_AND_SSE",
         "sub_agents": [

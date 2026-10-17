@@ -391,7 +391,7 @@ export function buildAcademicLabReportPrintableHTML(
   <h2>3. ${isMY ? 'Alat, Bahan & Substitusi Fungsi' : 'Alat, Bahan & Substitusi Fungsi'}</h2>
   <ul>${materialsHtml}</ul>
 
-  <h2>4. ${isMY ? 'Prosedur Langkah Kerja Terverifikasi AI Vision' : 'Prosedur Langkah Kerja Terverifikasi AI Vision'}</h2>
+  <h2>4. ${isMY ? 'Prosedur Langkah Kerja' : 'Prosedur Langkah Kerja'}</h2>
   <ol>${proceduresHtml}</ol>
 
   <h2>5. ${isMY ? 'Jadual Data Pemerhatian & Graf Analisis' : 'Tabel Data Pengamatan & Grafik Analisis'}</h2>
@@ -417,14 +417,27 @@ export function buildAcademicLabReportPrintableHTML(
     </svg>
   </div>
 
+  ${
+    /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(request.result_photo_base64)
+      ? `<div class="graph-box"><div><strong>${isMY ? 'Foto Hasil Amali' : 'Foto Hasil Praktikum'}</strong></div><img src="${request.result_photo_base64}" alt="" style="max-width:100%;max-height:320px;margin-top:6px" /></div>`
+      : ''
+  }
+
   <h2>6. ${isMY ? 'Perbincangan Analisis Sains' : 'Pembahasan Analisis Sains'}</h2>
   <p>${escapeHtml(report.result_analysis_discussion)}</p>
+  ${
+    request.reflection_answers.length > 0
+      ? `<p><strong>${isMY ? 'Jawapan Refleksi' : 'Jawaban Refleksi'}:</strong></p><ol>${request.reflection_answers
+          .map((a) => `<li>${escapeHtml(a)}</li>`)
+          .join('')}</ol>`
+      : ''
+  }
 
   <h2>7. ${isMY ? 'Kesimpulan' : 'Kesimpulan'}</h2>
   <p>${escapeHtml(report.conclusion_local)}</p>
 
   <div class="footer-sign">
-    <div>Dicetak melalui <strong>RekaSains AI-Native STEM Lab</strong> pada ${escapeHtml(report.generated_at_utc)}</div>
+    <div>Dicetak melalui <strong>RekaSains</strong> pada ${escapeHtml(report.generated_at_utc)}</div>
     <div>Tanda Tangan: ___________________________ (${escapeHtml(request.student_name)})</div>
   </div>
 </body>

@@ -60,3 +60,6 @@ __pycache__/
 *.py[cod]
 *$py.class
 .pytest_cache/
+
+# TypeScript incremental build cache
+*.tsbuildinfo

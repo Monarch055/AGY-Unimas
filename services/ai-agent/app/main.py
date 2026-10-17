@@ -29,11 +29,19 @@ from app.agents.adk_orchestrator import (
     VisionInventoryAgent,
     get_adk_agents_manifest,
 )
+from app.agents.gemini_lab_agents import (
+    ExperimentSessionStore,
+    GeminiCurriculumScaffolderAgent,
+    GeminiLabReportAgent,
+    GeminiResourceMatcherAgent,
+    GeminiStepVisionAgent,
+)
 from app.delivery.http.api import router as gateway_compat_router
 from app.delivery.http.router import create_agent_api_router
 from app.domain.models import HealthCheckResponse, utc_now_iso
 from app.infrastructure.config import settings
 from app.infrastructure.event_stream import InMemorySSEEventBroadcaster
+from app.infrastructure.gemini_client import GeminiError
 from app.usecase.workflows import (
     MatchThreeTierAndSubstitutesUseCase,
     ScaffoldAdaptiveExperimentUseCase,
@@ -116,6 +124,7 @@ def create_app() -> FastAPI:
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
+        expose_headers=["X-RekaSains-Engine"],
     )
 
     @application.middleware("http")
@@ -123,7 +132,17 @@ def create_app() -> FastAPI:
         req_id = request.headers.get("X-Request-ID") or str(uuid4())
         response: Response = await call_next(request)
         response.headers["X-Request-ID"] = req_id
+        # Lets clients show whether agent answers came from Gemini or the rule-based fallback.
+        response.headers["X-RekaSains-Engine"] = "gemini" if settings.gemini_api_key else "rules"
         return response
+
+    @application.exception_handler(GeminiError)
+    async def gemini_error_handler(request: Request, exc: GeminiError) -> JSONResponse:
+        logger.warning(f"Gemini failed at {request.url.path}: {exc}")
+        return JSONResponse(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            content={"error_code": "GEMINI_FAILED", "detail": str(exc)},
+        )
 
     @application.exception_handler(Exception)
     async def global_exception_handler(request: Request, exc: Exception) -> JSONResponse:
@@ -142,10 +161,18 @@ def create_app() -> FastAPI:
 
     safety_agent = SafetyGuardianAgent()
     vision_agent = VisionInventoryAgent()
-    matcher_agent = ResourceMatcherAgent()
-    scaffolder_agent = CurriculumScaffolderAgent()
-    step_vision_ar_agent = StepVisionAndARAgent()
-    lab_report_agent = LabReportSynthesizerAgent()
+    if settings.gemini_api_key:
+        # Gemini proposes experiments and writes modules/reports; safety stays rule-based.
+        experiment_store = ExperimentSessionStore()
+        matcher_agent = GeminiResourceMatcherAgent(experiment_store)
+        scaffolder_agent = GeminiCurriculumScaffolderAgent(experiment_store)
+        step_vision_ar_agent = GeminiStepVisionAgent(experiment_store)
+        lab_report_agent = GeminiLabReportAgent(experiment_store)
+    else:
+        matcher_agent = ResourceMatcherAgent()
+        scaffolder_agent = CurriculumScaffolderAgent()
+        step_vision_ar_agent = StepVisionAndARAgent()
+        lab_report_agent = LabReportSynthesizerAgent()
 
     scan_uc = ScanWorkspaceInventoryUseCase(
         vision_agent=vision_agent,

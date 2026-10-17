@@ -8,6 +8,7 @@
 import { formatIntegerCurrency } from '@rekasains/shared-core';
 import type {
   AgeAdaptiveLevelEnum,
+  ExperimentRecommendationCardDTO,
   ExperimentScaffoldRequest,
   InventoryConfirmRequest,
   InventoryConfirmResponse,
@@ -36,8 +37,78 @@ import {
   saveOfflineLabPack,
 } from './offline-db';
 
+import { recordAgentCall, type AgentName } from './agent-trace';
+
 export const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/v1';
+
+/** ai-agent service (FastAPI), reached through Caddy at /ai/v1 in docker compose. */
+export const AI_BASE_URL =
+  process.env.NEXT_PUBLIC_AI_URL || 'http://localhost:8081/ai/v1';
+
+interface RequestOptions<T> {
+  baseUrl?: string;
+  /** Throw instead of returning null, for calls whose local fallback would be fake data. */
+  strict?: boolean;
+  /** Marks a successful response as AI-produced and describes it for the trace. */
+  describeAI?: (data: T) => string | null;
+  /** Treat the response as AI-produced when ai-agent reports the Gemini engine in its header. */
+  aiFromHeader?: boolean;
+}
+
+/**
+ * Sends a JSON request and records the outcome in the agent trace.
+ * Returns the parsed body on success, or null when the caller must use its local fallback.
+ */
+async function requestTraced<T>(
+  agent: AgentName,
+  method: 'POST' | 'PUT',
+  path: string,
+  payload: unknown,
+  options: RequestOptions<T> = {}
+): Promise<T | null> {
+  const startedAt = performance.now();
+  const elapsed = () => Math.round(performance.now() - startedAt);
+  const endpoint = `${method} ${path}`;
+  let failure: string;
+  try {
+    const res = await fetch(`${options.baseUrl ?? API_BASE_URL}${path}`, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (res.ok) {
+      const data = (await res.json()) as T;
+      const aiDetail =
+        options.describeAI?.(data) ??
+        (options.aiFromHeader && res.headers.get('X-RekaSains-Engine') === 'gemini'
+          ? `Gemini · HTTP ${res.status}`
+          : null);
+      recordAgentCall({
+        agent,
+        endpoint,
+        source: aiDetail ? 'ai' : 'server',
+        durationMs: elapsed(),
+        detail: aiDetail ?? `HTTP ${res.status}`,
+      });
+      return data;
+    }
+    const body = (await res.json().catch(() => null)) as { detail?: unknown; message?: unknown } | null;
+    const reason = typeof body?.detail === 'string' ? body.detail : typeof body?.message === 'string' ? body.message : '';
+    failure = `HTTP ${res.status}${reason ? `: ${reason}` : ''}`;
+  } catch {
+    failure = 'Server tidak terjangkau';
+  }
+  recordAgentCall({
+    agent,
+    endpoint,
+    source: options.strict ? 'error' : 'local',
+    durationMs: elapsed(),
+    detail: options.strict ? failure : `${failure}, memakai data lokal`,
+  });
+  if (options.strict) throw new Error(failure);
+  return null;
+}
 
 /**
  * Evaluates active workspace co-location hazards client-side as a deterministic safety net
@@ -89,17 +160,28 @@ export async function scanWorkspacePhoto(
   payload: InventoryScanRequest,
   simulateHazardCoLocation = false
 ): Promise<InventoryScanResponse> {
-  try {
-    const res = await fetch(`${API_BASE_URL}/inventory/scan`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-    if (res.ok) {
-      return (await res.json()) as InventoryScanResponse;
+  // A real photo must be analysed by the vision agent; inventing items for it would be fake data.
+  const isRealPhoto = /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/]{100}/.test(payload.image_base64);
+  const remote = await requestTraced<InventoryScanResponse>(
+    'VisionInventoryAgent',
+    'POST',
+    '/inventory/scan',
+    payload,
+    {
+      baseUrl: AI_BASE_URL,
+      strict: isRealPhoto,
+      describeAI: (data) =>
+        data.inference_engine && data.inference_engine !== 'rules'
+          ? `${data.inference_engine}: ${data.detected_items?.length ?? 0} benda`
+          : null,
     }
-  } catch {
-    // Fallback to deterministic local vision extraction when offline or server not running
+  );
+  if (remote) {
+    return {
+      ...remote,
+      detected_items: remote.detected_items ?? [],
+      active_workspace_hazards: remote.active_workspace_hazards ?? [],
+    };
   }
 
   const isMY = payload.region === 'MY';
@@ -186,18 +268,13 @@ export async function scanWorkspacePhoto(
 export async function confirmInventoryItems(
   payload: InventoryConfirmRequest
 ): Promise<InventoryConfirmResponse> {
-  try {
-    const res = await fetch(`${API_BASE_URL}/inventory/items`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-    if (res.ok) {
-      return (await res.json()) as InventoryConfirmResponse;
-    }
-  } catch {
-    // Fallback to deterministic local evaluation
-  }
+  const remote = await requestTraced<InventoryConfirmResponse>(
+    'SafetyGuardianAgent',
+    'PUT',
+    '/inventory/items',
+    payload
+  );
+  if (remote) return { ...remote, safety_alerts: remote.safety_alerts ?? [] };
 
   const alerts = evaluateClientCoLocationHazards(
     payload.items.map((i) => i.material_slug),
@@ -211,23 +288,47 @@ export async function confirmInventoryItems(
 }
 
 /**
+ * core-api (Go) encodes empty slices as `null`; coerce every list to an array.
+ */
+function normalizeMatchResponse(
+  res: RecommendationMatchResponse,
+  region: RegionCode
+): RecommendationMatchResponse {
+  const cards = (list: ExperimentRecommendationCardDTO[] | null | undefined) =>
+    (list ?? []).map((card) => ({
+      ...card,
+      functional_substitutes: (card.functional_substitutes ?? []).map((s) => ({
+        ...s,
+        adaptation_steps: s.adaptation_steps ?? [],
+      })),
+      missing_local_shop_items: (card.missing_local_shop_items ?? []).map((m) => ({
+        ...m,
+        recommended_stores: m.recommended_stores ?? [],
+      })),
+    }));
+  return {
+    region: res.region ?? region,
+    strict_100_matches: cards(res.strict_100_matches),
+    diy_substitute_matches: cards(res.diy_substitute_matches),
+    local_micro_shop_matches: cards(res.local_micro_shop_matches),
+    blocked_hazard_alerts: res.blocked_hazard_alerts ?? [],
+  };
+}
+
+/**
  * 3. POST /v1/recommendations/match (USP #2, #3, #4, #5)
  */
 export async function matchThreeTierExperiments(
   payload: RecommendationMatchRequest
 ): Promise<RecommendationMatchResponse> {
-  try {
-    const res = await fetch(`${API_BASE_URL}/recommendations/match`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-    if (res.ok) {
-      return (await res.json()) as RecommendationMatchResponse;
-    }
-  } catch {
-    // Offline / Local Seeded Catalog Fallback
-  }
+  const remote = await requestTraced<RecommendationMatchResponse>(
+    'ResourceMatcherAgent',
+    'POST',
+    '/recommendations/match',
+    payload,
+    { baseUrl: AI_BASE_URL, strict: true, aiFromHeader: true }
+  );
+  if (remote) return normalizeMatchResponse(remote, payload.region);
 
   const isMY = payload.region === 'MY';
   const currency = isMY ? 'MYR_SEN' : 'IDR';
@@ -361,22 +462,50 @@ export async function scaffoldAdaptiveExperiment(
   slug: string,
   payload: ExperimentScaffoldRequest
 ): Promise<STEMExperimentModuleDTO> {
+  let remote: STEMExperimentModuleDTO | null;
   try {
-    const res = await fetch(`${API_BASE_URL}/experiments/${encodeURIComponent(slug)}/scaffold`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-    if (res.ok) {
-      const data = (await res.json()) as STEMExperimentModuleDTO;
-      await saveOfflineLabPack(data);
-      return data;
-    }
-  } catch {
-    const cached = await getOfflineLabPack(slug, payload.age_adaptive_level);
-    if (cached) {
-      return cached.module;
-    }
+    remote = await requestTraced<STEMExperimentModuleDTO>(
+      'CurriculumScaffolderAgent',
+      'POST',
+      `/experiments/${encodeURIComponent(slug)}/scaffold`,
+      payload,
+      { baseUrl: AI_BASE_URL, strict: true, aiFromHeader: true }
+    );
+  } catch (err) {
+    // A module generated earlier for this experiment and level is still real data.
+    const cachedPack = await getOfflineLabPack(slug, payload.age_adaptive_level);
+    if (cachedPack) return cachedPack.module;
+    throw err;
+  }
+  if (remote) {
+    const vars = remote.scientific_variables_and_graph;
+    const normalized: STEMExperimentModuleDTO = {
+      ...remote,
+      scientific_variables_and_graph: vars
+        ? {
+            ...vars,
+            formulas_latex: vars.formulas_latex ?? [],
+            control_variables: vars.control_variables ?? [],
+          }
+        : undefined,
+      safety_checks: remote.safety_checks ?? [],
+      steps: (remote.steps ?? []).map((s) => ({
+        ...s,
+        default_ar_overlay: s.default_ar_overlay
+          ? { ...s.default_ar_overlay, vector_paths: s.default_ar_overlay.vector_paths ?? [] }
+          : { overlay_type: 'NONE', caption_local: '', vector_paths: [] },
+      })),
+      reflection_questions: (remote.reflection_questions ?? []).map((q) => ({
+        ...q,
+        options: q.options ?? [],
+      })),
+    };
+    await saveOfflineLabPack(normalized);
+    return normalized;
+  }
+  const cached = await getOfflineLabPack(slug, payload.age_adaptive_level);
+  if (cached) {
+    return cached.module;
   }
 
   const isMY = payload.region === 'MY';
@@ -608,20 +737,21 @@ export async function verifyExperimentStepVision(
   stepNumber: number,
   payload: StepVisionVerifyRequest
 ): Promise<StepVisionVerifyResponse> {
-  try {
-    const res = await fetch(
-      `${API_BASE_URL}/experiments/${encodeURIComponent(slug)}/steps/${stepNumber}/verify-vision`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      }
-    );
-    if (res.ok) {
-      return (await res.json()) as StepVisionVerifyResponse;
-    }
-  } catch {
-    // Fallback to deterministic StepVisionAndARAgent local verification
+  const remote = await requestTraced<StepVisionVerifyResponse>(
+    'StepVisionAndARAgent',
+    'POST',
+    `/experiments/${encodeURIComponent(slug)}/steps/${stepNumber}/verify-vision`,
+    payload,
+    { baseUrl: AI_BASE_URL, strict: true, aiFromHeader: true }
+  );
+  if (remote) {
+    const overlay = remote.ar_overlay_simulation;
+    return {
+      ...remote,
+      ar_overlay_simulation: overlay
+        ? { ...overlay, vector_paths: overlay.vector_paths ?? [] }
+        : { overlay_type: 'NONE', caption_local: '', vector_paths: [] },
+    };
   }
 
   const isMY = payload.region === 'MY';
@@ -671,22 +801,21 @@ export async function generateAcademicLabReport(
   payload: LabReportGenerateRequest,
   variablesSpec?: STEMExperimentModuleDTO['scientific_variables_and_graph']
 ): Promise<LabReportGenerateResponse> {
-  try {
-    const res = await fetch(
-      `${API_BASE_URL}/experiments/${encodeURIComponent(slug)}/lab-report/generate`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      }
-    );
-    if (res.ok) {
-      const report = (await res.json()) as LabReportGenerateResponse;
-      await saveLabReportLocally(report);
-      return report;
-    }
-  } catch {
-    // Offline fallback using local LabReportSynthesizer engine
+  const remote = await requestTraced<LabReportGenerateResponse>(
+    'LabReportSynthesizerAgent',
+    'POST',
+    `/experiments/${encodeURIComponent(slug)}/lab-report/generate`,
+    payload,
+    { baseUrl: AI_BASE_URL, strict: true, aiFromHeader: true }
+  );
+  if (remote) {
+    const report: LabReportGenerateResponse = {
+      ...remote,
+      materials_used_list: remote.materials_used_list ?? [],
+      procedure_summary: remote.procedure_summary ?? [],
+    };
+    await saveLabReportLocally(report);
+    return report;
   }
 
   const fallbackReport = buildOfflineLabReportFallback(
@@ -709,22 +838,19 @@ export async function syncOfflineGamificationProgress(
     await enqueueOfflineCompletion(item);
   }
 
-  try {
-    const res = await fetch(`${API_BASE_URL}/sync/offline-progress`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-    if (res.ok) {
-      const data = (await res.json()) as OfflineProgressSyncResponse;
-      await clearSyncedOfflineCompletions(
-        payload.completions.map((c) => c.client_mutation_id)
-      );
-      await saveAwardedBadgesLocally(data.newly_awarded_badges);
-      return data;
-    }
-  } catch {
-    // Keep in IndexedDB queue and return local optimistic badge calculation
+  const remote = await requestTraced<OfflineProgressSyncResponse>(
+    'ProgressSync',
+    'POST',
+    '/sync/offline-progress',
+    payload
+  );
+  if (remote) {
+    await clearSyncedOfflineCompletions(
+      payload.completions.map((c) => c.client_mutation_id)
+    );
+    const badges = remote.newly_awarded_badges ?? [];
+    await saveAwardedBadgesLocally(badges);
+    return { ...remote, newly_awarded_badges: badges };
   }
 
   const uniqueMutationIds = new Set(payload.completions.map((c) => c.client_mutation_id));

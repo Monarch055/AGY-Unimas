@@ -1,0 +1,14 @@
+{
+  "name": "rekasains-monorepo",
+  "private": true,
+  "workspaces": [
+    "apps/web",
+    "packages/shared-types",
+    "packages/shared-core"
+  ],
+  "scripts": {
+    "dev:web": "npm run dev --workspace @rekasains/web",
+    "build:web": "npm run build --workspace @rekasains/web",
+    "typecheck:web": "npm run typecheck --workspace @rekasains/web"
+  }
+}

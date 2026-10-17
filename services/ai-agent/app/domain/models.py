@@ -149,6 +149,8 @@ class InventoryScanResponse(BaseModel):
     region: RegionCode
     detected_items: List[InventoryItemDTO]
     active_workspace_hazards: List[SafetyAlertDTO]
+    # Which engine produced detected_items: the Gemini model name, or "rules" for the keyword fallback.
+    inference_engine: Optional[str] = None
 
 
 # ============================================================================
@@ -336,7 +338,7 @@ class LabReportGenerateRequest(BaseModel):
     institution_name: str = Field(..., min_length=1)
     class_or_nim: str = Field(..., min_length=1)
     instructor_name: Optional[str] = None
-    result_photo_base64: str = Field(..., min_length=1)
+    result_photo_base64: str = ""
     observation_data_rows: List[ObservationDataRowDTO] = Field(default_factory=list)
     reflection_answers: List[str] = Field(default_factory=list)
 

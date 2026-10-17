@@ -23,6 +23,7 @@ from app.domain.models import (
     StepVisionVerifyResponse,
 )
 from app.infrastructure.config import settings
+from app.infrastructure.gemini_vision import detect_inventory_with_gemini
 from app.usecase.inventory_usecase import InventoryExtractionUseCase
 from app.usecase.lab_report_usecase import SynthesizeLabReportUseCase
 from app.usecase.recommendation_usecase import RecommendationMatcherUseCase
@@ -126,7 +127,10 @@ class GoogleADKEngine:
 
     def __init__(self) -> None:
         # Instantiate use cases
-        self.inventory_usecase = InventoryExtractionUseCase()
+        self.inventory_usecase = InventoryExtractionUseCase(
+            photo_detector=detect_inventory_with_gemini,
+            detector_name=settings.vision_model,
+        )
         self.recommendation_usecase = RecommendationMatcherUseCase()
         self.scaffold_usecase = ScaffoldExperimentUseCase()
         self.step_vision_usecase = VerifyStepVisionUseCase()

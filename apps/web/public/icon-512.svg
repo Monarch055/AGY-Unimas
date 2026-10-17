@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect width="512" height="512" rx="104" fill="#0B132B"/>
+  <circle cx="256" cy="256" r="218" stroke="#1C2541" stroke-width="10" fill="none"/>
+  <!-- STEM Flask & Sparkle -->
+  <path d="M224 108 L288 108 L288 172 L368 330 A42 42 0 0 1 330 390 L182 390 A42 42 0 0 1 144 330 L224 172 Z" fill="none" stroke="#00E5FF" stroke-width="22" stroke-linejoin="round" stroke-linecap="round"/>
+  <!-- Liquid Level -->
+  <path d="M176 308 Q214 294 256 308 T336 308 L346 334 A32 32 0 0 1 320 370 L192 370 A32 32 0 0 1 166 334 Z" fill="#10B981" opacity="0.85"/>
+  <!-- Bubbles & Electrons -->
+  <circle cx="230" cy="336" r="10" fill="#F8FAFC"/>
+  <circle cx="278" cy="326" r="8" fill="#F8FAFC"/>
+  <circle cx="256" cy="268" r="9" fill="#00E5FF"/>
+  <!-- AR Crosshairs / Vectors -->
+  <circle cx="256" cy="256" r="170" stroke="#F59E0B" stroke-width="5" stroke-dasharray="16,14" fill="none"/>
+  <path d="M256 64 L256 96 M256 416 L256 448 M64 256 L96 256 M416 256 L448 256" stroke="#00E5FF" stroke-width="10" stroke-linecap="round"/>
+</svg>

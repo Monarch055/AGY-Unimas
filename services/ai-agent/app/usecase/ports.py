@@ -5,7 +5,7 @@ Dependency Inversion Interfaces for the 6 Google ADK Sub-Agents and Event Stream
 
 from __future__ import annotations
 
-from typing import Dict, List, Protocol
+from typing import Dict, List, Protocol, Tuple
 
 from app.domain.models import (
     AgeAdaptiveLevelEnum,
@@ -41,6 +41,12 @@ class VisionInventoryAgentPort(Protocol):
     def extract_inventory_from_image(
         self, req: InventoryScanRequest
     ) -> List[InventoryItemDTO]:
+        ...
+
+    def extract_inventory_with_engine(
+        self, req: InventoryScanRequest
+    ) -> Tuple[List[InventoryItemDTO], str]:
+        """Returns the detected items and the engine name ("rules" or the Gemini model)."""
         ...
 
 

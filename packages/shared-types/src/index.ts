@@ -118,6 +118,8 @@ export interface InventoryScanResponse {
   region: RegionCode;
   detected_items: InventoryItemDTO[];
   active_workspace_hazards: SafetyAlertDTO[];
+  /** Gemini model name, or "rules" when the keyword fallback produced the items. */
+  inference_engine?: string;
 }
 
 export interface InventoryConfirmRequest {

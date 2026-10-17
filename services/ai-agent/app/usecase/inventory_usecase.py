@@ -5,7 +5,7 @@ Layer 2 (Use Case): Workspace Inventory Extraction & Active Co-Location Safety D
 from __future__ import annotations
 
 import re
-from typing import List, Tuple
+from typing import Callable, List, Optional, Tuple
 from uuid import uuid4
 
 from app.domain.catalog_knowledge import CANONICAL_MATERIALS, SAFETY_HAZARD_RULES
@@ -23,8 +23,20 @@ from app.domain.models import (
 class InventoryExtractionUseCase:
     """Extracts physical inventory and detects co-location chemical hazards on workspace photos."""
 
+    def __init__(
+        self,
+        photo_detector: Optional[Callable[[InventoryScanRequest], Optional[List[InventoryItemDTO]]]] = None,
+        detector_name: str = "gemini",
+    ) -> None:
+        self._photo_detector = photo_detector
+        self._detector_name = detector_name
+
     def execute(self, req: InventoryScanRequest) -> InventoryScanResponse:
-        detected_items = self._extract_materials_from_image(req.image_base64, req.region)
+        detected_items = self._photo_detector(req) if self._photo_detector else None
+        engine = self._detector_name
+        if detected_items is None:
+            detected_items = self._extract_materials_from_image(req.image_base64, req.region)
+            engine = "rules"
         hazards = self._evaluate_co_location_hazards(detected_items, req.region)
 
         return InventoryScanResponse(
@@ -32,6 +44,7 @@ class InventoryExtractionUseCase:
             region=req.region,
             detected_items=detected_items,
             active_workspace_hazards=hazards,
+            inference_engine=engine,
         )
 
     def _extract_materials_from_image(
