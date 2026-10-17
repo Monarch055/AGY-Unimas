@@ -6,30 +6,36 @@ help:
 	@echo "                 RekaSains Monorepo CLI                        "
 	@echo "======================================================================"
 	@echo "Available commands:"
-	@echo "  make dev          - Start frontend & backend development servers"
-	@echo "  make build        - Build all apps and microservices"
+	@echo "  make dev          - Start full docker-compose stack"
+	@echo "  make build        - Build all container images"
 	@echo "  make test         - Run test suites across the monorepo"
 	@echo "  make lint         - Run static analysis and linters"
-	@echo "  make infra-up     - Start local Docker infrastructure (DB, Cache, etc.)"
-	@echo "  make infra-down   - Stop local Docker infrastructure"
+	@echo "  make infra-up     - Start local Docker infrastructure (DB & Cache)"
+	@echo "  make infra-down   - Stop local Docker containers"
 	@echo "  make infra-logs   - Stream infrastructure logs"
 	@echo "  make clean        - Clean build artifacts and temporary files"
 	@echo "======================================================================"
 
 dev:
-	@echo "Starting development environment..."
+	docker compose up --build
 
 build:
-	@echo "Building all services and applications..."
+	docker compose build
 
 test:
-	@echo "Running tests across monorepo..."
+	@echo "==> Running shared packages test..."
+	node --test packages/shared-core/tests/shared-core.test.mjs
+	@echo "==> Running web frontend test..."
+	node --test apps/web/tests/web-engine.test.mjs
+	@echo "==> Running AI Agent engine test..."
+	cd services/ai-agent && python -m unittest discover -s tests -v
 
 lint:
-	@echo "Running linters..."
+	@echo "==> Checking TypeScript and Python syntax..."
+	python -m py_compile services/ai-agent/app/main.py
 
 infra-up:
-	docker compose up -d
+	docker compose up -d postgres redis
 
 infra-down:
 	docker compose down

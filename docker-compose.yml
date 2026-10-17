@@ -1,6 +1,22 @@
-# Local development infrastructure dependencies for RekaSains
+# Local development and full-stack orchestration for RekaSains
+# Zero-RabbitMQ Directive: Uses Direct Internal HTTP/REST + SSE Streaming
+
 services:
-  # Relational Database (PostgreSQL 16)
+  # 1. Reverse Proxy & Ingress Gateway (Caddy)
+  caddy:
+    image: caddy:2.8-alpine
+    container_name: rekasains-caddy
+    restart: unless-stopped
+    ports:
+      - "${INGRESS_PORT:-80}:80"
+    volumes:
+      - ./deployments/proxy/Caddyfile:/etc/caddy/Caddyfile:ro
+    depends_on:
+      - core-api
+      - ai-agent
+      - web
+
+  # 2. Relational Database (PostgreSQL 16)
   postgres:
     image: postgres:16-alpine
     container_name: rekasains-postgres
@@ -18,9 +34,9 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 30s
+      start_period: 15s
 
-  # In-Memory Cache (Valkey / Redis 7.2)
+  # 3. In-Memory Cache (Valkey / Redis 7.2)
   redis:
     image: valkey/valkey:7.2-alpine
     container_name: rekasains-valkey
@@ -34,7 +50,63 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 15s
+      start_period: 10s
+
+  # 4. Go Control Plane API (services/core-api)
+  core-api:
+    build:
+      context: ./services/core-api
+      dockerfile: Dockerfile
+    container_name: rekasains-core-api
+    restart: unless-stopped
+    environment:
+      PORT: "8080"
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-postgres}
+      DB_NAME: ${DB_NAME:-rekasains}
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      AI_AGENT_URL: http://ai-agent:8081/ai/v1
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # 5. Python 3.12+ Google ADK Engine (services/ai-agent)
+  ai-agent:
+    build:
+      context: ./services/ai-agent
+      dockerfile: Dockerfile
+    container_name: rekasains-ai-agent
+    restart: unless-stopped
+    environment:
+      PORT: "8081"
+      AI_AGENT_PORT: "8081"
+      CORE_API_URL: http://core-api:8080/v1
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+    ports:
+      - "8081:8081"
+    depends_on:
+      - redis
+
+  # 6. Next.js Mobile-First PWA (apps/web)
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    container_name: rekasains-web
+    restart: unless-stopped
+    environment:
+      PORT: "3000"
+      NEXT_PUBLIC_API_URL: http://localhost/v1
+      NEXT_PUBLIC_AI_URL: http://localhost/ai/v1
+    ports:
+      - "3000:3000"
 
 volumes:
   postgres_data:

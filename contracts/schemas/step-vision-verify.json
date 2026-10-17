@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "StepVisionVerificationResponse",
+  "type": "object",
+  "required": [
+    "step_number",
+    "is_correct",
+    "confidence",
+    "feedback_message",
+    "detected_components",
+    "can_proceed_to_next_step"
+  ],
+  "properties": {
+    "step_number": { "type": "integer", "minimum": 1 },
+    "is_correct": { "type": "boolean" },
+    "confidence": { "type": "number", "minimum": 0.0, "maximum": 1.0 },
+    "feedback_message": { "type": "string" },
+    "detected_components": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "can_proceed_to_next_step": { "type": "boolean" },
+    "ar_overlay": {
+      "type": "object",
+      "required": ["ar_element_type", "label", "anchor_coordinate", "vector_end_coordinate"],
+      "properties": {
+        "ar_element_type": { "type": "string" },
+        "label": { "type": "string" },
+        "anchor_coordinate": {
+          "type": "object",
+          "required": ["x_norm", "y_norm"],
+          "properties": {
+            "x_norm": { "type": "number", "minimum": 0.0, "maximum": 1.0 },
+            "y_norm": { "type": "number", "minimum": 0.0, "maximum": 1.0 }
+          }
+        },
+        "vector_end_coordinate": {
+          "type": "object",
+          "required": ["x_norm", "y_norm"],
+          "properties": {
+            "x_norm": { "type": "number", "minimum": 0.0, "maximum": 1.0 },
+            "y_norm": { "type": "number", "minimum": 0.0, "maximum": 1.0 }
+          }
+        },
+        "animation_effect": { "type": "string" }
+      }
+    }
+  }
+}

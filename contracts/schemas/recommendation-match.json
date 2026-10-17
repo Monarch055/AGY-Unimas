@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "RecommendationMatchResponse",
+  "type": "object",
+  "required": ["region", "curriculum_code", "tier1_strict_matches", "tier2_diy_substitutes", "tier3_local_shop_buys"],
+  "properties": {
+    "region": { "type": "string", "enum": ["ID", "MY"] },
+    "curriculum_code": { "type": "string" },
+    "tier1_strict_matches": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/ExperimentRecommendationCard" }
+    },
+    "tier2_diy_substitutes": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/ExperimentRecommendationCard" }
+    },
+    "tier3_local_shop_buys": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/ExperimentRecommendationCard" }
+    }
+  },
+  "$defs": {
+    "ExperimentRecommendationCard": {
+      "type": "object",
+      "required": ["experiment_id", "title", "subject", "readiness_score", "tier", "missing_materials", "functional_substitutes", "shopping_recommendations"],
+      "properties": {
+        "experiment_id": { "type": "string" },
+        "title": { "type": "string" },
+        "subject": { "type": "string" },
+        "readiness_score": { "type": "number", "minimum": 0.0, "maximum": 1.0 },
+        "tier": { "type": "string", "enum": ["STRICT_100", "DIY_SUBSTITUTE", "LOCAL_MICRO_SHOP"] },
+        "missing_materials": { "type": "array", "items": { "type": "string" } },
+        "functional_substitutes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["missing_material_id", "suggested_substitute_id", "suggested_substitute_name", "scientific_rationale"],
+            "properties": {
+              "missing_material_id": { "type": "string" },
+              "suggested_substitute_id": { "type": "string" },
+              "suggested_substitute_name": { "type": "string" },
+              "scientific_rationale": { "type": "string" }
+            }
+          }
+        },
+        "shopping_recommendations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["item_name", "store_name", "deep_link_url"],
+            "properties": {
+              "item_name": { "type": "string" },
+              "store_name": { "type": "string" },
+              "deep_link_url": { "type": "string" },
+              "est_price_idr": { "type": ["integer", "null"] },
+              "est_price_myr_sen": { "type": ["integer", "null"] }
+            }
+          }
+        }
+      }
+    }
+  }
+}

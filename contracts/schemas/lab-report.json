@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "LabReportResponse",
+  "type": "object",
+  "required": [
+    "report_id",
+    "experiment_id",
+    "title",
+    "student_name",
+    "academic_level",
+    "objective",
+    "apparatus_and_materials",
+    "procedure_steps",
+    "scientific_discussion",
+    "conclusion",
+    "pdf_download_url",
+    "created_at"
+  ],
+  "properties": {
+    "report_id": { "type": "string" },
+    "experiment_id": { "type": "string" },
+    "title": { "type": "string" },
+    "student_name": { "type": "string" },
+    "academic_institution": { "type": "string" },
+    "academic_level": {
+      "type": "string",
+      "enum": ["SD_ELEMENTARY", "SMP_LOWER_SEC", "SMA_UPPER_SEC", "HIGHER_ED_UNI"]
+    },
+    "objective": { "type": "string" },
+    "apparatus_and_materials": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "procedure_steps": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "data_observations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "variable_x": { "type": "number" },
+          "variable_y": { "type": "number" }
+        }
+      }
+    },
+    "graph_analysis": {
+      "type": "object",
+      "properties": {
+        "slope": { "type": "number" },
+        "intercept": { "type": "number" },
+        "r_squared": { "type": "number" },
+        "interpretation": { "type": "string" }
+      }
+    },
+    "scientific_discussion": { "type": "string" },
+    "conclusion": { "type": "string" },
+    "pdf_download_url": { "type": "string" },
+    "created_at": { "type": "string" }
+  }
+}

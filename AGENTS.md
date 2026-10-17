@@ -160,6 +160,14 @@ Setiap service mematuhi 4 layer Robert C. Martin dengan **Inward Dependency Rule
 ## Journal of Notable Architectural Decisions
 
 <!-- Append notable entries newest on top -->
+- **[2026-10-17 12:01] [MULTI-AGENT BROADCAST — SESSION `12-00` COMPLETED]** Completed all remaining unflagged specifications, runbooks, and deployment orchestration files across the monorepo:
+  - Authored `docs/prd-srs/PRD-001-rekasains-stem-lab.md` (Product Requirements Document covering all 10 Core USPs, Personas from SD to Higher Ed, and NFRs).
+  - Authored `docs/prd-srs/SRS-001-rekasains-technical-spec.md` (Software Requirements Specification covering 4-Layer Clean Architecture, 6-Sub-Agent Google ADK, and Zero-RabbitMQ Direct REST/SSE protocol) and updated `docs/prd-srs/README.md`.
+  - Authored `docs/runbooks/RUNBOOK-001-service-recovery-and-incident-response.md` (Operational Runbook for Container Health, Direct SSE Reconnect, and Offline-First Local Fallback) and updated `docs/runbooks/README.md`.
+  - Expanded `docker-compose.yml` with profiles `infra` (PostgreSQL 16 & Valkey 7.2) and `full` (orchestrating `core-api`, `ai-agent`, `web`, and `caddy` reverse proxy together).
+  - Updated root `Makefile` and `Taskfile.yml` to replace echo stubs with real test execution commands (`make test` runs `apps/web` and `services/ai-agent` test suites).
+  - Updated `deployments/terraform/main.tf` with concrete Docker network and volume definitions for reproducible cloud/container IaC deployments.
+  - Verified all monorepo test suites (100% pass) and synchronized `docs/context/06-CURRENT-STATE.md`.
 - **[2026-10-17 11:55] [MULTI-AGENT BROADCAST — SESSION `11-47` COMPLETED]** Completed Gate 4 & Gate 5 implementation of **Sub-Part 3 / Phase 2: `services/ai-agent` (Python 3.12+ / FastAPI + 6-Sub-Agent Google ADK Engine)**:
   - Implemented Dual-Mode Google ADK Engine (`app/agents/google_adk_engine.py`) orchestrating all 6 specialized Sub-Agents: `VisionInventoryAgent`, `ResourceMatcherAgent`, `CurriculumScaffolderAgent`, `SafetyGuardianAgent`, `StepVisionAndARAgent`, and `LabReportSynthesizerAgent`.
   - Implemented all 5 Layer 2 Application Use Cases (`inventory_usecase.py`, `recommendation_usecase.py`, `scaffold_usecase.py`, `step_vision_usecase.py`, `lab_report_usecase.py`) with 100% active co-location hazard recall and normalized AR vector coordinate mapping `[0.0, 1.0]`.

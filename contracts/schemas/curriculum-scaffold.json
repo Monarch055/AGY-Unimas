@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CurriculumScaffoldResponse",
+  "type": "object",
+  "required": [
+    "experiment_slug",
+    "title",
+    "region",
+    "curriculum_code",
+    "age_adaptive_level",
+    "stem_concept_summary",
+    "steps",
+    "safety_warnings",
+    "reflection_questions"
+  ],
+  "properties": {
+    "experiment_slug": { "type": "string" },
+    "title": { "type": "string" },
+    "region": { "type": "string", "enum": ["ID", "MY"] },
+    "curriculum_code": { "type": "string" },
+    "age_adaptive_level": {
+      "type": "string",
+      "enum": ["SD_ELEMENTARY", "SMP_LOWER_SEC", "SMA_UPPER_SEC", "HIGHER_ED_UNI"]
+    },
+    "stem_concept_summary": { "type": "string" },
+    "scientific_formulas": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "analytical_variables": {
+      "type": "object",
+      "properties": {
+        "independent_variable": { "type": "string" },
+        "dependent_variable": { "type": "string" },
+        "controlled_variables": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "steps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["step_number", "instruction", "visual_prompt", "requires_vision_verification"],
+        "properties": {
+          "step_number": { "type": "integer", "minimum": 1 },
+          "instruction": { "type": "string" },
+          "visual_prompt": { "type": "string" },
+          "requires_vision_verification": { "type": "boolean" },
+          "ar_overlay_preset": {
+            "type": "object",
+            "properties": {
+              "type": { "type": "string" },
+              "label": { "type": "string" },
+              "direction": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "safety_warnings": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "reflection_questions": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  }
+}

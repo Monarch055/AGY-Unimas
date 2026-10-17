@@ -7,24 +7,26 @@ tasks:
       - task --list
 
   dev:
-    desc: Start development environment
+    desc: Start development environment with docker-compose
     cmds:
-      - echo "Starting development environment..."
+      - docker compose up --build
 
   build:
     desc: Build all services and apps
     cmds:
-      - echo "Building all services..."
+      - docker compose build
 
   test:
     desc: Run tests across monorepo
     cmds:
-      - echo "Running tests..."
+      - node --test packages/shared-core/tests/shared-core.test.mjs
+      - node --test apps/web/tests/web-engine.test.mjs
+      - powershell -Command "cd services/ai-agent; python -m unittest discover -s tests -v"
 
   infra:up:
-    desc: Start local infrastructure containers
+    desc: Start local infrastructure containers (Postgres & Redis)
     cmds:
-      - docker compose up -d
+      - docker compose up -d postgres redis
 
   infra:down:
     desc: Stop local infrastructure containers
