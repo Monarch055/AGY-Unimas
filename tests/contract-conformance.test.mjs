@@ -38,6 +38,7 @@ test('Contract Conformance: OpenAPI v1.1.0 Endpoints Alignment Across Services',
   assert.ok(aiAgentRouter.includes('/experiments/{slug}/steps/{step_number}/verify-vision'));
   assert.ok(aiAgentRouter.includes('/experiments/{slug}/lab-report/generate'));
   assert.ok(aiAgentRouter.includes('/events/stream'));
+  assert.ok(aiAgentRouter.includes('/chat/stream'));
 
   // Verify services/core-api implements handlers
   const coreApiHandlers = fs.readFileSync(
@@ -50,6 +51,7 @@ test('Contract Conformance: OpenAPI v1.1.0 Endpoints Alignment Across Services',
   assert.ok(coreApiHandlers.includes('VerifyStepVision'));
   assert.ok(coreApiHandlers.includes('GenerateAcademicLabReport'));
   assert.ok(coreApiHandlers.includes('SyncOfflineProgress'));
+  assert.ok(coreApiHandlers.includes('handleChatSessions'));
 
   // Verify apps/web api-client invokes the endpoints
   const webApiClient = fs.readFileSync(

@@ -21,12 +21,14 @@ import { WorkspaceScannerAndHazardBanner } from '../components/WorkspaceScannerA
 import { ThreeTierRecommendationExplorer } from '../components/ThreeTierRecommendationExplorer';
 import { AdaptiveSTEMModuleAndARLab } from '../components/AdaptiveSTEMModuleAndARLab';
 import { AcademicLabReportPDFGenerator } from '../components/AcademicLabReportPDFGenerator';
+import { ChatSTEMAssistant } from '../components/ChatSTEMAssistant';
 
 export default function RekaSainsHomePage() {
   const [region, setRegion] = useState<RegionCode>('ID');
   const [userRole, setUserRole] = useState<UserRole>('STUDENT');
   const [ageLevel, setAgeLevel] = useState<AgeAdaptiveLevelEnum>('SMA_UPPER_SEC');
   const [isOfflineMode, setIsOfflineMode] = useState<boolean>(false);
+  const [activeTab, setActiveTab] = useState<'lab' | 'tutor'>('lab');
 
   const [inventoryItems, setInventoryItems] = useState<InventoryItemDTO[]>([]);
   const [activeHazards, setActiveHazards] = useState<SafetyAlertDTO[]>([]);
@@ -235,51 +237,96 @@ export default function RekaSainsHomePage() {
         </div>
       </header>
 
-      {/* Section 1: USP #1 & #7 — Camera Inventory Scanner & Active Co-Location Hazard Banner */}
-      <WorkspaceScannerAndHazardBanner
-        region={region}
-        items={inventoryItems}
-        activeHazards={activeHazards}
-        onInventoryUpdated={handleInventoryUpdated}
-      />
+      {/* Main Feature Tabs Navigation */}
+      <nav className="flex rounded-2xl bg-slate-900 border border-slate-800 p-1.5 shadow-xl">
+        <button
+          type="button"
+          onClick={() => setActiveTab('lab')}
+          className={`flex-1 rounded-xl py-3 px-4 text-sm font-extrabold transition flex items-center justify-center gap-2 ${
+            activeTab === 'lab'
+              ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 shadow-md'
+              : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+          }`}
+        >
+          <span>🔬 Laboratorium STEM &amp; AR</span>
+          <span className="hidden sm:inline-block rounded-full bg-slate-950/20 px-2 py-0.5 text-xs font-bold">
+            10 USPs
+          </span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('tutor')}
+          className={`flex-1 rounded-xl py-3 px-4 text-sm font-extrabold transition flex items-center justify-center gap-2 ${
+            activeTab === 'tutor'
+              ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 shadow-md'
+              : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+          }`}
+        >
+          <span>💬 Tanya Lab AI (STEM Chat Tutor)</span>
+          <span className="rounded-full bg-cyan-400/20 border border-cyan-400/30 text-cyan-300 px-2 py-0.5 text-[10px] font-bold">
+            Google ADK
+          </span>
+        </button>
+      </nav>
 
-      {/* Section 2: USP #2, #3, #4 — 3-Tier Matcher, Functional Substitutes & Local Shop Deep-Links */}
-      {matchResponse && (
-        <ThreeTierRecommendationExplorer
-          region={region}
-          matchData={matchResponse}
-          selectedExperimentSlug={selectedExperimentSlug}
-          onSelectExperiment={(slug) => setSelectedExperimentSlug(slug)}
-        />
-      )}
-
-      {/* Section 3: USP #5, #6, #8, #9 — 4-Level Adaptive Module, LaTeX/Graph, AI Vision Step Checker & AR Overlay */}
-      {activeModule && (
-        <AdaptiveSTEMModuleAndARLab
+      {activeTab === 'tutor' ? (
+        /* Feature: Tanya Lab AI — Conversational Multimodal STEM Tutor */
+        <ChatSTEMAssistant
           region={region}
           ageLevel={ageLevel}
-          isOfflineMode={isOfflineMode}
-          module={activeModule}
-          observationRows={observationRows}
           onAgeLevelChange={(lvl) => setAgeLevel(lvl)}
-          onObservationRowsChange={(rows) => setObservationRows(rows)}
-          onStepVerified={(stepNum) =>
-            setVerifiedSteps((prev) =>
-              prev.includes(stepNum) ? prev : [...prev, stepNum]
-            )
-          }
+          isOfflineMode={isOfflineMode}
         />
-      )}
+      ) : (
+        /* Features: Laboratorium STEM, 3-Tier Explorer, AR Vision & Lab Report */
+        <>
+          {/* Section 1: USP #1 & #7 — Camera Inventory Scanner & Active Co-Location Hazard Banner */}
+          <WorkspaceScannerAndHazardBanner
+            region={region}
+            items={inventoryItems}
+            activeHazards={activeHazards}
+            onInventoryUpdated={handleInventoryUpdated}
+          />
 
-      {/* Section 4: USP #10 — Automated Academic Lab Report PDF Generator & Offline Badges Sync */}
-      {activeModule && (
-        <AcademicLabReportPDFGenerator
-          region={region}
-          ageLevel={ageLevel}
-          module={activeModule}
-          observationRows={observationRows}
-          verifiedSteps={verifiedSteps}
-        />
+          {/* Section 2: USP #2, #3, #4 — 3-Tier Matcher, Functional Substitutes & Local Shop Deep-Links */}
+          {matchResponse && (
+            <ThreeTierRecommendationExplorer
+              region={region}
+              matchData={matchResponse}
+              selectedExperimentSlug={selectedExperimentSlug}
+              onSelectExperiment={(slug) => setSelectedExperimentSlug(slug)}
+            />
+          )}
+
+          {/* Section 3: USP #5, #6, #8, #9 — 4-Level Adaptive Module, LaTeX/Graph, AI Vision Step Checker & AR Overlay */}
+          {activeModule && (
+            <AdaptiveSTEMModuleAndARLab
+              region={region}
+              ageLevel={ageLevel}
+              isOfflineMode={isOfflineMode}
+              module={activeModule}
+              observationRows={observationRows}
+              onAgeLevelChange={(lvl) => setAgeLevel(lvl)}
+              onObservationRowsChange={(rows) => setObservationRows(rows)}
+              onStepVerified={(stepNum) =>
+                setVerifiedSteps((prev) =>
+                  prev.includes(stepNum) ? prev : [...prev, stepNum]
+                )
+              }
+            />
+          )}
+
+          {/* Section 4: USP #10 — Automated Academic Lab Report PDF Generator & Offline Badges Sync */}
+          {activeModule && (
+            <AcademicLabReportPDFGenerator
+              region={region}
+              ageLevel={ageLevel}
+              module={activeModule}
+              observationRows={observationRows}
+              verifiedSteps={verifiedSteps}
+            />
+          )}
+        </>
       )}
     </main>
   );

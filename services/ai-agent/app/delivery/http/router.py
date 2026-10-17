@@ -12,7 +12,9 @@ from typing import Any, Callable, Dict, List
 from fastapi import APIRouter, BackgroundTasks, HTTPException
 from fastapi.responses import JSONResponse, StreamingResponse
 
+from app.agents.conversational_tutor_agent import conversational_tutor_agent
 from app.domain.models import (
+    ChatStreamRequest,
     ExperimentScaffoldRequest,
     HealthCheckResponse,
     InventoryScanRequest,
@@ -121,5 +123,15 @@ def create_agent_api_router(
                 yield f"event: {ev.event_type}\ndata: {payload}\n\n"
 
         return StreamingResponse(event_generator(), media_type="text/event-stream")
+
+    @router.post("/chat/stream")
+    async def stream_chat(req: ChatStreamRequest) -> StreamingResponse:
+        """
+        Sub-Agent 7: ConversationalTutorAgent (Tanya Lab AI SSE stream, FEAT-003).
+        """
+        return StreamingResponse(
+            conversational_tutor_agent.stream_chat_response(req),
+            media_type="text/event-stream",
+        )
 
     return router

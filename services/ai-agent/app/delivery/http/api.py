@@ -14,9 +14,11 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 from app.agents.google_adk_engine import adk_engine
+from app.agents.conversational_tutor_agent import conversational_tutor_agent
 from app.domain.catalog_knowledge import CANONICAL_MATERIALS, FUNCTIONAL_SUBSTITUTES
 from app.domain.models import (
     AgeAdaptiveLevelEnum,
+    ChatStreamRequest,
     ExperimentScaffoldRequest,
     FunctionalMaterialSubstituteDTO,
     HealthCheckResponse,
@@ -291,6 +293,18 @@ async def _sse_streamer() -> AsyncGenerator[str, None]:
 async def events_sse_stream() -> StreamingResponse:
     """Server-Sent Events endpoint implementing PAYLOAD_CONTRACT.md without RabbitMQ."""
     return StreamingResponse(_sse_streamer(), media_type="text/event-stream")
+
+
+@router.post("/chat/stream")
+async def chat_stream_endpoint(req: ChatStreamRequest) -> StreamingResponse:
+    """
+    Sub-Agent 7 (ConversationalTutorAgent): Tanya Lab AI SSE streaming endpoint (FEAT-003).
+    Streams pedagogical explanations with LaTeX and proactive chemical safety checks.
+    """
+    return StreamingResponse(
+        conversational_tutor_agent.stream_chat_response(req),
+        media_type="text/event-stream",
+    )
 
 
 def _log_agent_event(event_type: str, data: Dict[str, Any]) -> None:

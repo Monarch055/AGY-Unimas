@@ -33,10 +33,10 @@ test:
 	@echo "==> [3/4] Running Monorepo End-to-End Workflow & OpenAPI Contract Conformance..."
 	node --test tests/e2e_full_workflow.test.mjs
 	node --test tests/contract-conformance.test.mjs
-	@echo "==> [4/4] Running AI Agent Google ADK 6-Sub-Agent & Multi-Region Test Suite..."
+	@echo "==> [4/4] Running AI Agent Google ADK 7-Sub-Agent & Multi-Region Test Suite..."
 	python -m unittest discover -s services/ai-agent/tests -v
 	@echo "======================================================================"
-	@echo "  ALL 48 MONOREPO TEST SUITES PASSED SUCCESSFULLY! (100% GREEN)       "
+	@echo "  ALL 50 MONOREPO TEST SUITES PASSED SUCCESSFULLY! (100% GREEN)       "
 	@echo "======================================================================"
 
 lint:

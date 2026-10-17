@@ -711,5 +711,13 @@ def get_adk_agents_manifest() -> Dict[str, Any]:
                 ],
                 "model": LabReportSynthesizerAgent.model_name,
             },
+            {
+                "id": 7,
+                "name": "ConversationalTutorAgent",
+                "usp_coverage": [
+                    "FEAT-003: Tanya Lab AI — Conversational Multimodal STEM Tutor with Streaming SSE & Age-Adaptive LaTeX"
+                ],
+                "model": "gemini-2.5-flash",
+            },
         ],
     }

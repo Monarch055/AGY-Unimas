@@ -160,6 +160,14 @@ Setiap service mematuhi 4 layer Robert C. Martin dengan **Inward Dependency Rule
 ## Journal of Notable Architectural Decisions
 
 <!-- Append notable entries newest on top -->
+- **[2026-10-17 13:00] [MULTI-AGENT BROADCAST — SESSION `12-37` COMPLETED]** Implemented **FEAT-003: Tanya Lab AI — Conversational Multimodal STEM Tutor**:
+  - Implemented Sub-Agent #7 `ConversationalTutorAgent` in `services/ai-agent` using pure Google GenAI / ADK (`from google import genai`) streaming via Server-Sent Events (SSE `text/event-stream` at `/ai/v1/chat/stream`).
+  - Implemented proactive safety guardrails against toxic gas co-location (NaOCl bleach + acidic cleaner/ammonia) with immediate red alert interception.
+  - Implemented 4-level age-adaptive pedagogical tone & KaTeX LaTeX mathematical notation formatting ($...$ and $$...$$).
+  - Implemented offline-first handling: delivers a friendly requirement notice when offline or `GEMINI_API_KEY` is unconfigured while preserving local conversation history.
+  - Added PostgreSQL 16 migration `004_create_chat_sessions_and_messages.sql` and `/v1/chat/sessions` endpoints in `services/core-api`.
+  - Implemented dedicated interactive UI `apps/web/src/components/ChatSTEMAssistant.tsx`, top navigation tab switcher in `page.tsx`, and IndexedDB chat session persistence in `offline-db.ts`.
+  - Expanded automated test coverage across Python and Web suites (15/15 Python tests + 36/36 Node tests PASS — 100% Green).
 - **[2026-10-17 12:45] [MULTI-AGENT BROADCAST — SESSION `12-36` COMPLETED]** Implemented mathematical LaTeX rendering subsystem with KaTeX across `apps/web`:
   - Resolved raw unformatted LaTeX formula display across Senior High / University STEM modules ($I = \frac{V}{R}$, $V_{\text{terminal}} = \mathcal{E} - I \cdot r_{\text{int}}$, etc.).
   - Added `apps/web/src/components/LatexRenderer.tsx` with delimiter sanitization (`\(..\)`, `\[..\]`, `$$..$$`, `$..$`), double-backslash normalization, and resilient fallback to italicized serif on parse error.

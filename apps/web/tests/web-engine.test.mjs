@@ -66,6 +66,7 @@ test('USP #1, #3, #5, #7, #8, #9, #10: Verify apps/web Source Files & Contract A
     'src/components/ThreeTierRecommendationExplorer.tsx',
     'src/components/AdaptiveSTEMModuleAndARLab.tsx',
     'src/components/AcademicLabReportPDFGenerator.tsx',
+    'src/components/ChatSTEMAssistant.tsx',
     'src/components/LatexRenderer.tsx',
     'src/app/layout.tsx',
     'src/app/page.tsx',
@@ -152,4 +153,32 @@ test('USP #5: KaTeX LaTeX Mathematical Equation Rendering', async () => {
     'Rendered HTML must include fraction markup'
   );
 });
+
+test('FEAT-003: Tanya Lab AI Conversational Tutor & Offline Chat Session Storage', () => {
+  const webRoot = path.resolve(__dirname, '..');
+  const chatComponent = fs.readFileSync(
+    path.join(webRoot, 'src/components/ChatSTEMAssistant.tsx'),
+    'utf8'
+  );
+  assert.ok(chatComponent.includes('streamChatWithSTEMTutor'), 'Must invoke streamChatWithSTEMTutor');
+  assert.ok(chatComponent.includes('LatexText'), 'Must use LatexText KaTeX parser');
+  assert.ok(chatComponent.includes('saveChatSessionLocally'), 'Must persist sessions to IndexedDB');
+  assert.ok(chatComponent.includes('accept="image/*"'), 'Must support camera / image upload');
+
+  const offlineDbContent = fs.readFileSync(
+    path.join(webRoot, 'src/lib/offline-db.ts'),
+    'utf8'
+  );
+  assert.ok(offlineDbContent.includes('saveChatSessionLocally'), 'offline-db must export saveChatSessionLocally');
+  assert.ok(offlineDbContent.includes('getChatSessionLocally'), 'offline-db must export getChatSessionLocally');
+  assert.ok(offlineDbContent.includes('listChatSessionsLocally'), 'offline-db must export listChatSessionsLocally');
+
+  const apiClientContent = fs.readFileSync(
+    path.join(webRoot, 'src/lib/api-client.ts'),
+    'utf8'
+  );
+  assert.ok(apiClientContent.includes('streamChatWithSTEMTutor'), 'api-client must export streamChatWithSTEMTutor');
+  assert.ok(apiClientContent.includes('/ai/v1/chat/stream'), 'api-client must target /ai/v1/chat/stream');
+});
+
 

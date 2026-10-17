@@ -6,13 +6,14 @@
 
 import type {
   AwardedBadgeDTO,
+  ChatSessionDTO,
   LabReportGenerateResponse,
   OfflineCompletionItemInput,
   STEMExperimentModuleDTO,
 } from '@rekasains/shared-types';
 
 const DB_NAME = 'rekasains_offline_pwa_db';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 export interface StoredOfflineLabPack {
   packKey: string;
@@ -27,6 +28,7 @@ const memoryPacks = new Map<string, StoredOfflineLabPack>();
 const memoryMutations = new Map<string, OfflineCompletionItemInput>();
 const memoryReports = new Map<string, LabReportGenerateResponse>();
 const memoryBadges = new Map<string, AwardedBadgeDTO>();
+const memoryChatSessions = new Map<string, ChatSessionDTO>();
 
 function isBrowserIndexedDBAvailable(): boolean {
   return typeof window !== 'undefined' && typeof window.indexedDB !== 'undefined';
@@ -48,6 +50,9 @@ function openRekaSainsDB(): Promise<IDBDatabase> {
       }
       if (!db.objectStoreNames.contains('awarded_badges')) {
         db.createObjectStore('awarded_badges', { keyPath: 'badge_code' });
+      }
+      if (!db.objectStoreNames.contains('chat_sessions')) {
+        db.createObjectStore('chat_sessions', { keyPath: 'id' });
       }
     };
     request.onsuccess = () => resolve(request.result);
@@ -217,3 +222,59 @@ export async function saveAwardedBadgesLocally(badges: AwardedBadgeDTO[]): Promi
     tx.onerror = () => reject(tx.error);
   });
 }
+
+/**
+ * Persists a complete ChatSessionDTO (messages, prompt, timestamp) to IndexedDB.
+ */
+export async function saveChatSessionLocally(session: ChatSessionDTO): Promise<void> {
+  memoryChatSessions.set(session.id, session);
+  if (!isBrowserIndexedDBAvailable()) {
+    return;
+  }
+  const db = await openRekaSainsDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('chat_sessions', 'readwrite');
+    tx.objectStore('chat_sessions').put(session);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+/**
+ * Retrieves a cached ChatSessionDTO by session ID.
+ */
+export async function getChatSessionLocally(sessionId: string): Promise<ChatSessionDTO | null> {
+  if (!isBrowserIndexedDBAvailable()) {
+    return memoryChatSessions.get(sessionId) || null;
+  }
+  const db = await openRekaSainsDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('chat_sessions', 'readonly');
+    const req = tx.objectStore('chat_sessions').get(sessionId);
+    req.onsuccess = () => resolve((req.result as ChatSessionDTO) || memoryChatSessions.get(sessionId) || null);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+/**
+ * Lists all cached ChatSessionDTOs sorted with newest first.
+ */
+export async function listChatSessionsLocally(): Promise<ChatSessionDTO[]> {
+  if (!isBrowserIndexedDBAvailable()) {
+    return Array.from(memoryChatSessions.values()).sort(
+      (a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+    );
+  }
+  const db = await openRekaSainsDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('chat_sessions', 'readonly');
+    const req = tx.objectStore('chat_sessions').getAll();
+    req.onsuccess = () => {
+      const items = (req.result as ChatSessionDTO[]) || [];
+      items.sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
+      resolve(items);
+    };
+    req.onerror = () => reject(req.error);
+  });
+}
+

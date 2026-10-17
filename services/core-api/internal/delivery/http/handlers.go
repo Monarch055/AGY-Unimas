@@ -58,6 +58,7 @@ func (h *ServerHandler) registerRoutes() {
 	h.mux.HandleFunc("/v1/recommendations/match", h.handleRecommendationsMatch)
 	h.mux.HandleFunc("/v1/experiments/", h.handleExperimentsSubroutes)
 	h.mux.HandleFunc("/v1/sync/offline-progress", h.handleOfflineProgressSync)
+	h.mux.HandleFunc("/v1/chat/sessions", h.handleChatSessions)
 }
 
 func extractUserID(r *http.Request) string {
@@ -373,3 +374,22 @@ func (h *ServerHandler) handleOfflineProgressSync(w http.ResponseWriter, r *http
 	}
 	writeJSON(w, http.StatusOK, resp)
 }
+
+// GET / POST /v1/chat/sessions (FEAT-003)
+func (h *ServerHandler) handleChatSessions(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodGet {
+		writeJSON(w, http.StatusOK, []any{})
+		return
+	}
+	if r.Method == http.MethodPost {
+		var session map[string]any
+		if err := json.NewDecoder(r.Body).Decode(&session); err != nil {
+			writeError(w, http.StatusBadRequest, "INVALID_JSON", err)
+			return
+		}
+		writeJSON(w, http.StatusOK, session)
+		return
+	}
+	writeError(w, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", errors.New("method not allowed"))
+}
+

@@ -262,6 +262,55 @@ paths:
               schema:
                 $ref: '#/components/schemas/OfflineProgressSyncResponse'
 
+  /chat/stream:
+    post:
+      summary: Streaming conversational STEM tutor with LaTeX formulas & multimodal image (FEAT-003)
+      description: >
+        Direct Server-Sent Events (SSE) streaming endpoint powering Tanya Lab AI.
+        Provides age-adaptive pedagogical explanations with LaTeX notation and chemical safety alerts.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatStreamRequest'
+      responses:
+        '200':
+          description: Server-Sent Events stream containing message chunks
+          content:
+            text/event-stream:
+              schema:
+                type: string
+                example: "data: {\"chunk\": \"Hukum Ohm\", \"is_final\": false}\n\n"
+
+  /chat/sessions:
+    get:
+      summary: Retrieve synchronized chat sessions for current user/device
+      responses:
+        '200':
+          description: List of chat sessions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ChatSessionDTO'
+    post:
+      summary: Create or sync a chat session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatSessionDTO'
+      responses:
+        '200':
+          description: Chat session successfully persisted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatSessionDTO'
+
 components:
   schemas:
     AgeAdaptiveLevelEnum:
@@ -812,3 +861,67 @@ components:
                 type: string
               icon_slug:
                 type: string
+
+    ChatStreamRequest:
+      type: object
+      required: [session_id, region, age_adaptive_level, curriculum_code, message]
+      properties:
+        session_id:
+          type: string
+        region:
+          $ref: '#/components/schemas/RegionCode'
+        age_adaptive_level:
+          $ref: '#/components/schemas/AgeAdaptiveLevelEnum'
+        curriculum_code:
+          $ref: '#/components/schemas/CurriculumCodeEnum'
+        message:
+          type: string
+        image_base64:
+          type: string
+          nullable: true
+        mime_type:
+          type: string
+          nullable: true
+
+    ChatMessageDTO:
+      type: object
+      required: [id, role, content, created_at]
+      properties:
+        id:
+          type: string
+        role:
+          type: string
+          enum: [user, assistant, system]
+        content:
+          type: string
+        has_image:
+          type: boolean
+          default: false
+        created_at:
+          type: string
+          format: date-time
+
+    ChatSessionDTO:
+      type: object
+      required: [id, title, region, age_adaptive_level, curriculum_code, messages, created_at, updated_at]
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        region:
+          $ref: '#/components/schemas/RegionCode'
+        age_adaptive_level:
+          $ref: '#/components/schemas/AgeAdaptiveLevelEnum'
+        curriculum_code:
+          $ref: '#/components/schemas/CurriculumCodeEnum'
+        messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChatMessageDTO'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time

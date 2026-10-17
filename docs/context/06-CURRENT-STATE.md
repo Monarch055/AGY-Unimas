@@ -16,6 +16,7 @@
 | **Sub-Part 3** | `services/ai-agent` | Phase 2: Python 3.12+ FastAPI + 6-Sub-Agent Google ADK (`VisionInventory`, `ResourceMatcher`, `CurriculumScaffolder`, `SafetyGuardian`, `StepVisionAndAR`, `LabReportSynthesizer`) | 🟢 **COMPLETED** | Sessions `11-40` & `11-47` | `2026-10-17 11:52` |
 | **Sub-Part 4** | `apps/web` | Phase 3: Next.js Mobile-First PWA, English UI Localization, KaTeX Math Rendering, Camera Scanner, Active Hazard Banner, HTML5 Canvas/SVG AR Overlay, 4-Level Graph Plotter, IndexedDB Offline Lab Pack & Editable PDF Lab Report Exporter | 🟢 **COMPLETED** | Sessions `11-38`, `12-33`, `12-36` | `2026-10-17 12:45` |
 | **Sub-Part 5** | `deployments/`, `Makefile`, `Taskfile.yml`, `package.json`, Dockerfiles | Full-Stack Docker Compose (profiles `infra` & `full`), Multi-Stage Container Dockerfiles (`web`, `core-api`, `ai-agent`), Caddy Reverse Proxy, IaC Terraform, Makefile & Taskfile orchestration | 🟢 **COMPLETED** | Sessions `12-00`, `12-25` | `2026-10-17 12:25` |
+| **Sub-Part 6** | `FEAT-003` (`ai-agent`, `core-api`, `apps/web`) | Tanya Lab AI: Conversational Multimodal STEM Tutor via pure Google ADK (`from google import genai`), SSE `/ai/v1/chat/stream`, Sub-Agent #7 `ConversationalTutorAgent`, `ChatSTEMAssistant.tsx`, IndexedDB chat cache, and migration `004` | 🟢 **COMPLETED** | Session `2026-10-17/12-37` | `2026-10-17 13:00` |
 
 ---
 
@@ -23,19 +24,20 @@
 
 | Enclave / Service | Module / Sub-system | Status | Test Coverage | Spec Document |
 |-------------------|---------------------|--------|---------------|---------------|
-| `docs/context` | Blueprint 01–07 (10 USPs, 6-Agent ADK, Zero-RabbitMQ) | 🟢 Production | Verified | `docs/context/01..07` |
+| `docs/context` | Blueprint 01–07 (10 USPs, 7-Agent ADK, Zero-RabbitMQ) | 🟢 Production | Verified | `docs/context/01..07` |
 | `docs/prd-srs` | PRD-001 (10 USPs, Personas, NFRs) & SRS-001 (Technical Spec) | 🟢 Production | Verified | `docs/prd-srs/` |
 | `docs/runbooks` | RUNBOOK-001 (Service Recovery & Incident Response) | 🟢 Production | Verified | `docs/runbooks/` |
 | `contracts/` | OpenAPI 3.0.3 & Internal SSE/REST Event Contracts | 🟢 Production | Schema Validated (`contract-conformance.test.mjs`) | `contracts/api/openapi.yaml` |
 | `packages/` | `shared-types` (DTOs) & `shared-core` (Pure Validators/Formatters) | 🟢 Production | 9 Tests PASS (`node --test`) | `contracts/api/openapi.yaml` |
 | `services/core-api` | Inventory, 3-Tier Matcher, Functional Substitutes & Active Hazard Rules (Go) | 🟢 Production | Unit Tested (`rekasains_usecases_test.go`) | `docs/features/FEAT-001-*.md` |
 | `services/core-api` | Step Verification Log, 4-Level Adaptive Data & Academic Lab Report PDF API | 🟢 Production | Unit Tested (`rekasains_usecases_test.go`) | `docs/features/FEAT-002-*.md` |
-| `services/ai-agent` | Google ADK 6-Agent Engine (`Vision`, `Matcher`, `Curriculum`, `Safety`, `StepVisionAndAR`, `LabReport`) | 🟢 Production | 14 Tests PASS (`unittest discover`) | `FEAT-001` & `FEAT-002` |
-| `apps/web` | Mobile-First PWA Scanner, AR Canvas Overlay, 4-Level Graph & PDF Lab Report | 🟢 Production | 22 Tests PASS (`web-engine`, `offline-and-graph`) | `FEAT-001` & `FEAT-002` |
+| `services/core-api` | Tanya Lab AI Chat Sessions & Messages Store (Migration `004`) | 🟢 Production | Verified (`contract-conformance.test.mjs`) | `docs/features/FEAT-003-*.md` |
+| `services/ai-agent` | Google ADK 7-Agent Engine (`Vision`, `Matcher`, `Curriculum`, `Safety`, `StepVisionAndAR`, `LabReport`, `ConversationalTutor`) | 🟢 Production | 15 Tests PASS (`unittest discover`) | `FEAT-001`, `FEAT-002`, `FEAT-003` |
+| `apps/web` | Mobile-First PWA Scanner, AR Canvas, 4-Level Graph, PDF Lab Report & Tanya Lab AI | 🟢 Production | 23 Tests PASS (`web-engine`, `offline-and-graph`) | `FEAT-001`, `FEAT-002`, `FEAT-003` |
 | `monorepo-e2e` | End-to-End 10 USPs Workflow & Contract Conformance | 🟢 Production | 11 Tests PASS (`e2e_full_workflow`, `contract-conformance`) | `contracts/api/openapi.yaml` |
 | `deployments` | Docker Compose Full Stack (Infra + App Containers), Caddy Reverse Proxy & Terraform IaC | 🟢 Production | Manual Verified | `docker-compose.yml` |
 
-*Total Monorepo Automated Tests: 56/56 PASS (100% Green)*
+*Total Monorepo Automated Tests: 58/58 PASS (100% Green)*
 *Legend: 🟢 Production Ready | 🔄 In-Progress (Locked by Active Agent) | 🟡 Specified / Ready to Claim | 🔴 Blocked*
 
 ---

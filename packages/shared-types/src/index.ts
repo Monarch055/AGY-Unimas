@@ -373,3 +373,45 @@ export interface RekaSainsEventEnvelope<TPayload = Record<string, unknown>> {
   version: '1.1';
   data: TPayload;
 }
+
+// ============================================================================
+// 8. Tanya Lab AI — Conversational Multimodal STEM Tutor DTOs (FEAT-003)
+// ============================================================================
+
+export type ChatMessageRole = 'user' | 'assistant' | 'system';
+
+export interface ChatMessageDTO {
+  id: string;
+  role: ChatMessageRole;
+  content: string;
+  has_image?: boolean;
+  created_at: string;
+}
+
+export interface ChatSessionDTO {
+  id: string;
+  title: string;
+  region: RegionCode;
+  age_adaptive_level: AgeAdaptiveLevelEnum;
+  curriculum_code: CurriculumCodeEnum;
+  messages: ChatMessageDTO[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ChatStreamRequest {
+  session_id: string;
+  region: RegionCode;
+  age_adaptive_level: AgeAdaptiveLevelEnum;
+  curriculum_code: CurriculumCodeEnum;
+  message: string;
+  image_base64?: string | null;
+  mime_type?: SupportedImageMimeType | null;
+}
+
+export interface ChatStreamChunkDTO {
+  chunk: string;
+  is_final: boolean;
+  session_id?: string;
+  error?: string;
+}

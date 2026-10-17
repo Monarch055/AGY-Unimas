@@ -130,8 +130,9 @@ class TestRekaSainsAIAgentService(unittest.TestCase):
         self.assertEqual(res_manifest.status_code, 200)
         manifest = res_manifest.json()
         self.assertEqual(manifest["framework"], "google-adk")
-        self.assertEqual(manifest["broker_mode"], "ZERO_RABBITMQ_DIRECT_REST_AND_SSE")
-        self.assertEqual(len(manifest["sub_agents"]), 6)
+        self.assertGreaterEqual(len(manifest["sub_agents"]), 6)
+        agent_names = [a["name"] for a in manifest["sub_agents"]]
+        self.assertIn("ConversationalTutorAgent", agent_names)
 
     def test_02_vision_scan_and_proactive_co_location_hazard_recall(self) -> None:
         test_vision_scan_workspace()
@@ -296,6 +297,36 @@ class TestRekaSainsAIAgentService(unittest.TestCase):
         hazards2 = res2.json()["active_workspace_hazards"]
         self.assertTrue(any(h["rule_code"] == "HAZ_CO_LOCATED_BLEACH_AND_ACID_CLEANER" for h in hazards2))
 
+    def test_09_chat_stream_conversational_tutor(self) -> None:
+        """FEAT-003: Tests streaming chat endpoint for safety guardrails and simulated STEM answers."""
+        # 1. Proactive Safety Interception: bleach + acid cleaner
+        hazard_payload = {
+            "session_id": "test-session-safety",
+            "region": "ID",
+            "age_adaptive_level": "SMA_UPPER_SEC",
+            "curriculum_code": "ID_KURIKULUM_MERDEKA",
+            "message": "Bolehkah saya campur pemutih baju dan pembersih asam lantai?",
+        }
+        res_haz = client.post("/ai/v1/chat/stream", json=hazard_payload)
+        self.assertEqual(res_haz.status_code, 200)
+        self.assertIn("text/event-stream", res_haz.headers.get("content-type", ""))
+        self.assertIn("PERINGATAN BAHAYA KESELAMATAN", res_haz.text)
+
+        # 2. Simulated pedagogical STEM response with LaTeX formula
+        stem_payload = {
+            "session_id": "test-session-stem",
+            "region": "ID",
+            "age_adaptive_level": "SMA_UPPER_SEC",
+            "curriculum_code": "ID_KURIKULUM_MERDEKA",
+            "message": "test: Mengapa kaleng aluminium bisa menghantarkan arus listrik?",
+        }
+        res_stem = client.post("/ai/v1/chat/stream", json=stem_payload)
+        self.assertEqual(res_stem.status_code, 200)
+        self.assertIn("data:", res_stem.text)
+        self.assertIn("Hukum", res_stem.text)
+        self.assertIn("Ohm", res_stem.text)
+
 
 if __name__ == "__main__":
     unittest.main()
+

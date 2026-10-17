@@ -8,6 +8,9 @@
 import { formatIntegerCurrency } from '@rekasains/shared-core';
 import type {
   AgeAdaptiveLevelEnum,
+  ChatMessageDTO,
+  ChatSessionDTO,
+  ChatStreamRequest,
   ExperimentScaffoldRequest,
   InventoryConfirmRequest,
   InventoryConfirmResponse,
@@ -749,3 +752,88 @@ export async function syncOfflineGamificationProgress(
     newly_awarded_badges: badges,
   };
 }
+
+/**
+ * FEAT-003: Connects to streaming Server-Sent Events (SSE) `/ai/v1/chat/stream`.
+ * Streams age-adaptive pedagogical explanations with LaTeX equations & chemical safety alerts.
+ * Fallbacks gracefully if offline or API key is unconfigured.
+ */
+export async function streamChatWithSTEMTutor(
+  req: ChatStreamRequest,
+  onChunk: (chunk: string) => void,
+  onComplete: () => void,
+  onError?: (err: Error) => void
+): Promise<void> {
+  const endpoints = [
+    '/ai/v1/chat/stream',
+    'http://localhost:8081/ai/v1/chat/stream',
+    'http://localhost:8081/v1/chat/stream',
+  ];
+
+  let streamSucceeded = false;
+
+  for (const endpoint of endpoints) {
+    try {
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'text/event-stream',
+        },
+        body: JSON.stringify(req),
+      });
+
+      if (!response.ok || !response.body) {
+        continue;
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder('utf-8');
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (trimmed.startsWith('data:')) {
+            try {
+              const jsonStr = trimmed.slice(5).trim();
+              if (jsonStr) {
+                const parsed = JSON.parse(jsonStr) as {
+                  chunk?: string;
+                  is_final?: boolean;
+                  error?: string;
+                };
+                if (parsed.chunk) {
+                  onChunk(parsed.chunk);
+                }
+              }
+            } catch {
+              // Ignore non-JSON or partial chunk
+            }
+          }
+        }
+      }
+
+      streamSucceeded = true;
+      onComplete();
+      return;
+    } catch {
+      // Continue to next endpoint fallback
+    }
+  }
+
+  if (!streamSucceeded) {
+    const offlineNotice =
+      'Koneksi Internet dan konfigurasi GEMINI_API_KEY Diperlukan untuk mengakses layanan langsung Tanya Lab AI. Riwayat pesan tetap tersimpan secara aman di IndexedDB perangkat lokal Anda.';
+    onChunk(offlineNotice);
+    onComplete();
+  }
+}
+

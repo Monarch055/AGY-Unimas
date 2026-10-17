@@ -366,3 +366,50 @@ class RekaSainsEventEnvelope(BaseModel):
     timestamp: str = Field(default_factory=utc_now_iso)
     version: str = "1.1"
     data: Dict[str, Any]
+
+
+# ============================================================================
+# 8. Tanya Lab AI — Conversational STEM Tutor DTOs (FEAT-003)
+# ============================================================================
+
+
+class ChatMessageRoleEnum(str, Enum):
+    USER = "user"
+    ASSISTANT = "assistant"
+    SYSTEM = "system"
+
+
+class ChatMessageDTO(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid4()))
+    role: ChatMessageRoleEnum
+    content: str
+    has_image: bool = False
+    created_at: str = Field(default_factory=utc_now_iso)
+
+
+class ChatSessionDTO(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid4()))
+    title: str
+    region: RegionCode
+    age_adaptive_level: AgeAdaptiveLevelEnum
+    curriculum_code: CurriculumCodeEnum
+    messages: List[ChatMessageDTO] = Field(default_factory=list)
+    created_at: str = Field(default_factory=utc_now_iso)
+    updated_at: str = Field(default_factory=utc_now_iso)
+
+
+class ChatStreamRequest(BaseModel):
+    session_id: str = Field(default_factory=lambda: str(uuid4()))
+    region: RegionCode = RegionCode.ID
+    age_adaptive_level: AgeAdaptiveLevelEnum = AgeAdaptiveLevelEnum.SMA_UPPER_SEC
+    curriculum_code: CurriculumCodeEnum = CurriculumCodeEnum.ID_KURIKULUM_MERDEKA
+    message: str = Field(..., min_length=1)
+    image_base64: Optional[str] = None
+    mime_type: Optional[SupportedImageMimeType] = None
+
+
+class ChatStreamChunkDTO(BaseModel):
+    chunk: str
+    is_final: bool
+    session_id: Optional[str] = None
+    error: Optional[str] = None
