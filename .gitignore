@@ -63,3 +63,7 @@ __pycache__/
 
 # TypeScript incremental build cache
 *.tsbuildinfo
+
+# Local AI assistant config (not shipped)
+.claude/
+CLAUDE.md
