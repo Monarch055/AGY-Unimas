@@ -20,8 +20,22 @@ interface WorkspaceScannerProps {
 const HAZARDOUS_SLUGS = new Set(['sodium_hypochlorite', 'floor_cleaner_acidic', 'ammonia_cleaner']);
 
 // Sample payloads understood by the backend and local fallback (no real photo involved).
-const SAMPLE_SAFE = 'data:image/jpeg;base64,REKASAIN_DEMO_SAFE_WORKSPACE';
-const SAMPLE_HAZARD = 'data:image/jpeg;base64,REKASAIN_DEMO_HAZARD_BLEACH_ACID';
+// Sample inventories filled straight from the catalog, so they work without any server call.
+const SAMPLE_SAFE: [string, number][] = [
+  ['battery_aa_1_5v', 2],
+  ['copper_wire_jumper', 2],
+  ['led_diode_5mm', 1],
+  ['aluminum_can_recycled', 1],
+  ['plastic_bottle_pet_600ml', 2],
+  ['thick_plastic_straw', 3],
+  ['balloon_latex', 2],
+  ['vinegar_kitchen', 1],
+  ['sodium_bicarbonate', 1],
+];
+const SAMPLE_HAZARD_EXTRA: [string, number][] = [
+  ['sodium_hypochlorite', 1],
+  ['floor_cleaner_acidic', 1],
+];
 
 export function WorkspaceScannerAndHazardBanner({
   region,
@@ -77,7 +91,14 @@ export function WorkspaceScannerAndHazardBanner({
 
   const handleSample = (hazard: boolean) => {
     setPreview(null);
-    void runScan(hazard ? SAMPLE_HAZARD : SAMPLE_SAFE, 'image/jpeg', hazard);
+    setError(null);
+    const sample = hazard ? [...SAMPLE_SAFE, ...SAMPLE_HAZARD_EXTRA] : SAMPLE_SAFE;
+    const next = sample.flatMap(([slug, qty]) => {
+      const t = MATERIAL_TEMPLATES.find((m) => m.slug === slug);
+      return t ? [templateToItem(t, region, qty)] : [];
+    });
+    updateItems(next);
+    setStatus(`Data contoh dimuat (${next.length} bahan). Ubah sesuai bahan yang benar-benar kamu punya.`);
   };
 
   const changeQty = (slug: string, delta: number) => {
