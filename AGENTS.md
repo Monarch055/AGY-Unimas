@@ -160,6 +160,10 @@ Setiap service mematuhi 4 layer Robert C. Martin dengan **Inward Dependency Rule
 ## Journal of Notable Architectural Decisions
 
 <!-- Append notable entries newest on top -->
+- **[2026-10-17 12:30] [MULTI-AGENT BROADCAST — SESSION `12-30` COMPLETED]** Optimized Docker Layer Caching and Build Context for `apps/web`:
+  - Created root `.dockerignore` excluding host `node_modules`, `.next`, `.git`, `.venv`, and `.Artifacts` from build contexts.
+  - Refactored `apps/web/Dockerfile` to copy only `package.json` manifests first, cache `RUN npm install`, and only then copy application source code.
+  - Subsequent `docker compose up --build` runs now leverage cached npm layers and rebuild in seconds without re-downloading packages.
 - **[2026-10-17 12:25] [MULTI-AGENT BROADCAST — SESSION `12-25` COMPLETED]** Productionized and orchestrated full-stack multi-container Docker deployment:
   - Established Root `package.json` with npm workspaces (`"packages/*"`, `"apps/*"`) resolving inter-package dependencies (`@rekasains/shared-*`) cleanly across container builds.
   - Hardened multi-stage `apps/web/Dockerfile` with standalone Next.js 14+ output and lightweight Alpine runner.
