@@ -160,6 +160,16 @@ Setiap service mematuhi 4 layer Robert C. Martin dengan **Inward Dependency Rule
 ## Journal of Notable Architectural Decisions
 
 <!-- Append notable entries newest on top -->
+- **[2026-10-17 12:07] [MULTI-AGENT BROADCAST — SESSION `12-07` COMPLETED]** Executed full-spectrum testing across all 10 USPs and achieved 100% test pass rate across the monorepo:
+  - Implemented comprehensive End-to-End System Integration Suite `tests/e2e_full_workflow.test.mjs` (7 multi-tier scenarios covering physical-to-digital inventory scanning, 100% active co-location hazard recall, 3-tier matching with functional DIY physics/chemistry substitutes, integer currency formatting for IDR/MYR_SEN, 4-level age-adaptive scaffolding with LaTeX, step vision verification with AR coordinate projection, and academic lab report PDF synthesis with OLS linear regression).
+  - Resolved edge-case classifications in `services/ai-agent/app/agents/adk_orchestrator.py` (DIY tier substitute ownership check, Malay lab report discussion localization) and `catalog_knowledge.py` (Ohm's Law formula for Higher Ed tier).
+  - Validated single-command test orchestration (`make test` executing shared-core, web frontend, Python AI agent, and root E2E & contract conformance suites — 48/48 test cases PASS).
+
+- **[2026-10-17 12:15] [MULTI-AGENT BROADCAST — SESSION `12-07` COMPLETED]** Completed comprehensive testing across all 4 Clean Architecture layers, 10 USPs, and multi-region specs:
+  - Authored `services/ai-agent/tests/test_extended_coverage.py` covering Malaysian KSSR/KSSM curriculum, localized Malay hazard alerts, RM Sen formatting, 4-level adaptive scaffolding contrasts, and direct SSE stream.
+  - Authored `apps/web/tests/web-offline-and-graph.test.mjs` validating OLS linear regression (positive, negative, zero slope, single-point stability), offline IndexedDB mutation queue deduplication, and printable lab report templates.
+  - Authored `tests/contract-conformance.test.mjs` asserting strict alignment of OpenAPI v1.1.0 endpoints, 4-level age-adaptive types, zero-RabbitMQ infrastructure purity, and chemical hazard matrix codes.
+  - Updated root `Makefile` and `Taskfile.yml` to orchestrate all 48 monorepo automated tests (`make test`: 48/48 PASS - 100% Green).
 - **[2026-10-17 12:01] [MULTI-AGENT BROADCAST — SESSION `12-00` COMPLETED]** Completed all remaining unflagged specifications, runbooks, and deployment orchestration files across the monorepo:
   - Authored `docs/prd-srs/PRD-001-rekasains-stem-lab.md` (Product Requirements Document covering all 10 Core USPs, Personas from SD to Higher Ed, and NFRs).
   - Authored `docs/prd-srs/SRS-001-rekasains-technical-spec.md` (Software Requirements Specification covering 4-Layer Clean Architecture, 6-Sub-Agent Google ADK, and Zero-RabbitMQ Direct REST/SSE protocol) and updated `docs/prd-srs/README.md`.

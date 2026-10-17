@@ -255,31 +255,6 @@ class ResourceMatcherAgent:
                 if found_sub is not None:
                     functional_subs_used.append(found_sub)
                 else:
-                    # Also provide functional substitute recommendation even if user needs to pick between household substitute vs micro-shop
-                    for sub_rule in FUNCTIONAL_SUBSTITUTE_RULES:
-                        if sub_rule.missing_material_slug == mat_req.material_slug:
-                            missing_spec = CANONICAL_MATERIALS[mat_req.material_slug]
-                            sub_spec = CANONICAL_MATERIALS[sub_rule.substitute_material_slug]
-                            functional_subs_used.append(
-                                FunctionalMaterialSubstituteDTO(
-                                    missing_material_slug=mat_req.material_slug,
-                                    missing_name_local=missing_spec.local_name(req.region),
-                                    substitute_material_slug=sub_rule.substitute_material_slug,
-                                    substitute_name_local=sub_spec.local_name(req.region),
-                                    shared_scientific_principle=(
-                                        sub_rule.shared_principle_id
-                                        if req.region == RegionCode.ID
-                                        else sub_rule.shared_principle_my
-                                    ),
-                                    adaptation_steps=(
-                                        sub_rule.adaptation_steps_id
-                                        if req.region == RegionCode.ID
-                                        else sub_rule.adaptation_steps_my
-                                    ),
-                                )
-                            )
-                            break
-
                     mat_spec = CANONICAL_MATERIALS.get(mat_req.material_slug)
                     if mat_spec:
                         shortfall = max(1.0, mat_req.min_quantity - have_qty)
@@ -320,7 +295,7 @@ class ResourceMatcherAgent:
                         missing_local_shop_items=[],
                     )
                 )
-            elif len(functional_subs_used) > 0:
+            elif len(functional_subs_used) > 0 and len(missing_shop_items) == 0:
                 pct = int(round(((satisfied_direct + 0.85 * len(functional_subs_used)) / total_reqs) * 100))
                 diy_sub.append(
                     ExperimentRecommendationCardDTO(
@@ -332,17 +307,17 @@ class ResourceMatcherAgent:
                         curriculum_badge=badge,
                         safety_severity="SAFE" if exp.safety_severity == "SAFE" else "ADULT_SUPERVISION",
                         functional_substitutes=functional_subs_used,
-                        missing_local_shop_items=missing_shop_items,
+                        missing_local_shop_items=[],
                     )
                 )
-            elif len(missing_shop_items) <= 2:
+            else:
                 pct = int(round((satisfied_direct / total_reqs) * 100))
                 local_shop.append(
                     ExperimentRecommendationCardDTO(
                         experiment_slug=exp.slug,
                         title_local=title_local,
                         match_tier=MatchTierEnum.LOCAL_MICRO_SHOP,
-                        match_percentage=max(50, pct),
+                        match_percentage=max(0, pct),
                         age_adaptive_level=req.age_adaptive_level,
                         curriculum_badge=badge,
                         safety_severity="SAFE" if exp.safety_severity == "SAFE" else "ADULT_SUPERVISION",

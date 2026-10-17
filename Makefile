@@ -3,12 +3,12 @@
 # Default target
 help:
 	@echo "======================================================================"
-	@echo "                 RekaSains Monorepo CLI                        "
+	@echo "                 RekaSains Monorepo CLI                               "
 	@echo "======================================================================"
 	@echo "Available commands:"
 	@echo "  make dev          - Start full docker-compose stack"
 	@echo "  make build        - Build all container images"
-	@echo "  make test         - Run test suites across the monorepo"
+	@echo "  make test         - Run all 48 test suites across the monorepo"
 	@echo "  make lint         - Run static analysis and linters"
 	@echo "  make infra-up     - Start local Docker infrastructure (DB & Cache)"
 	@echo "  make infra-down   - Stop local Docker containers"
@@ -23,17 +23,21 @@ build:
 	docker compose build
 
 test:
-	@echo "==> Running shared packages test..."
+	@echo "==> [1/4] Running shared packages tests (@rekasains/shared-types & @rekasains/shared-core)..."
 	node --test packages/shared-types/tests/shared-types.test.mjs
 	node --test packages/shared-core/tests/shared-core.test.mjs
-	@echo "==> Running web frontend test..."
+	@echo "==> [2/4] Running web frontend tests (PWA, Offline IndexedDB, AR Vector & Graph Regression)..."
 	node --test apps/web/tests/web-engine.test.mjs
+	node --test apps/web/tests/web-offline-and-graph.test.mjs
 	node --test apps/web/tests/e2e-workflow.test.mjs
-	@echo "==> Running End-to-End full workflow test (10 USPs)..."
+	@echo "==> [3/4] Running Monorepo End-to-End Workflow & OpenAPI Contract Conformance..."
 	node --test tests/e2e_full_workflow.test.mjs
-	@echo "==> Running AI Agent engine test..."
-	python -m unittest services/ai-agent/tests/test_ai_agent.py
-	@echo "All monorepo test suites passed successfully!"
+	node --test tests/contract-conformance.test.mjs
+	@echo "==> [4/4] Running AI Agent Google ADK 6-Sub-Agent & Multi-Region Test Suite..."
+	python -m unittest discover -s services/ai-agent/tests -v
+	@echo "======================================================================"
+	@echo "  ALL 48 MONOREPO TEST SUITES PASSED SUCCESSFULLY! (100% GREEN)       "
+	@echo "======================================================================"
 
 lint:
 	@echo "==> Checking TypeScript and Python syntax..."

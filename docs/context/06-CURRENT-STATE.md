@@ -26,14 +26,16 @@
 | `docs/context` | Blueprint 01–07 (10 USPs, 6-Agent ADK, Zero-RabbitMQ) | 🟢 Production | Verified | `docs/context/01..07` |
 | `docs/prd-srs` | PRD-001 (10 USPs, Personas, NFRs) & SRS-001 (Technical Spec) | 🟢 Production | Verified | `docs/prd-srs/` |
 | `docs/runbooks` | RUNBOOK-001 (Service Recovery & Incident Response) | 🟢 Production | Verified | `docs/runbooks/` |
-| `contracts/` | OpenAPI 3.0.3 & Internal SSE/REST Event Contracts | 🟢 Production | Schema Validated | `contracts/api/openapi.yaml` |
-| `packages/` | `shared-types` (DTOs) & `shared-core` (Pure Validators/Formatters) | 🟢 Production | Verified (`node --test`) | `contracts/api/openapi.yaml` |
+| `contracts/` | OpenAPI 3.0.3 & Internal SSE/REST Event Contracts | 🟢 Production | Schema Validated (`contract-conformance.test.mjs`) | `contracts/api/openapi.yaml` |
+| `packages/` | `shared-types` (DTOs) & `shared-core` (Pure Validators/Formatters) | 🟢 Production | 9 Tests PASS (`node --test`) | `contracts/api/openapi.yaml` |
 | `services/core-api` | Inventory, 3-Tier Matcher, Functional Substitutes & Active Hazard Rules (Go) | 🟢 Production | Unit Tested (`rekasains_usecases_test.go`) | `docs/features/FEAT-001-*.md` |
 | `services/core-api` | Step Verification Log, 4-Level Adaptive Data & Academic Lab Report PDF API | 🟢 Production | Unit Tested (`rekasains_usecases_test.go`) | `docs/features/FEAT-002-*.md` |
-| `services/ai-agent` | Google ADK 6-Agent Engine (`Vision`, `Matcher`, `Curriculum`, `Safety`, `StepVisionAndAR`, `LabReport`) | 🟢 Production | Unit Tested (`test_ai_agent.py`) | `FEAT-001` & `FEAT-002` |
-| `apps/web` | Mobile-First PWA Scanner, AR Canvas Overlay, 4-Level Graph & PDF Lab Report | 🟢 Production | Unit Tested (`tests/web-engine.test.mjs`) | `FEAT-001` & `FEAT-002` |
+| `services/ai-agent` | Google ADK 6-Agent Engine (`Vision`, `Matcher`, `Curriculum`, `Safety`, `StepVisionAndAR`, `LabReport`) | 🟢 Production | 14 Tests PASS (`unittest discover`) | `FEAT-001` & `FEAT-002` |
+| `apps/web` | Mobile-First PWA Scanner, AR Canvas Overlay, 4-Level Graph & PDF Lab Report | 🟢 Production | 14 Tests PASS (`web-engine`, `offline-and-graph`, `e2e`) | `FEAT-001` & `FEAT-002` |
+| `monorepo-e2e` | End-to-End 10 USPs Workflow & Contract Conformance | 🟢 Production | 11 Tests PASS (`e2e_full_workflow`, `contract-conformance`) | `contracts/api/openapi.yaml` |
 | `deployments` | Docker Compose Full Stack (Infra + App Containers), Caddy Reverse Proxy & Terraform IaC | 🟢 Production | Manual Verified | `docker-compose.yml` |
 
+*Total Monorepo Automated Tests: 48/48 PASS (100% Green)*
 *Legend: 🟢 Production Ready | 🔄 In-Progress (Locked by Active Agent) | 🟡 Specified / Ready to Claim | 🔴 Blocked*
 
 ---

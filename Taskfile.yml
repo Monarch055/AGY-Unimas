@@ -17,14 +17,16 @@ tasks:
       - docker compose build
 
   test:
-    desc: Run tests across monorepo
+    desc: Run comprehensive test suites across the entire monorepo
     cmds:
       - node --test packages/shared-types/tests/shared-types.test.mjs
       - node --test packages/shared-core/tests/shared-core.test.mjs
       - node --test apps/web/tests/web-engine.test.mjs
+      - node --test apps/web/tests/web-offline-and-graph.test.mjs
       - node --test apps/web/tests/e2e-workflow.test.mjs
       - node --test tests/e2e_full_workflow.test.mjs
-      - python -m unittest services/ai-agent/tests/test_ai_agent.py
+      - node --test tests/contract-conformance.test.mjs
+      - python -m unittest discover -s services/ai-agent/tests -v
 
   infra:up:
     desc: Start local infrastructure containers (Postgres & Redis)

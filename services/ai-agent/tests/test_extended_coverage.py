@@ -70,7 +70,9 @@ class TestRekaSainsExtendedCoverage(unittest.TestCase):
         # Check DIY substitute mapping (pvc_pipe_half_inch substituted by thick_plastic_straw)
         diy_matches = data["diy_substitute_matches"]
         self.assertGreaterEqual(len(diy_matches), 1)
-        diy_item = diy_matches[0]
+        roket_cards = [c for c in diy_matches if c["experiment_slug"] == "roket-pneumatik-bernoulli-pipa-botol"]
+        self.assertGreaterEqual(len(roket_cards), 1)
+        diy_item = roket_cards[0]
         self.assertGreaterEqual(len(diy_item["functional_substitutes"]), 1)
         sub = diy_item["functional_substitutes"][0]
         self.assertEqual(sub["missing_material_slug"], "pvc_pipe_half_inch")

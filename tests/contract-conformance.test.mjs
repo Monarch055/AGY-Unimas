@@ -15,11 +15,12 @@ test('Contract Conformance: OpenAPI v1.1.0 Endpoints Alignment Across Services',
 
   const expectedEndpoints = [
     '/inventory/scan',
+    '/inventory/items',
     '/recommendations/match',
     '/experiments/{slug}/scaffold',
     '/experiments/{slug}/steps/{step_number}/verify-vision',
     '/experiments/{slug}/lab-report/generate',
-    '/events/stream',
+    '/sync/offline-progress',
   ];
 
   for (const ep of expectedEndpoints) {
@@ -43,11 +44,12 @@ test('Contract Conformance: OpenAPI v1.1.0 Endpoints Alignment Across Services',
     path.join(monorepoRoot, 'services/core-api/internal/delivery/http/handlers.go'),
     'utf8'
   );
-  assert.ok(coreApiHandlers.includes('/inventory/scan') || coreApiHandlers.includes('ScanWorkspaceInventory'));
+  assert.ok(coreApiHandlers.includes('ScanWorkspaceInventory'));
   assert.ok(coreApiHandlers.includes('MatchThreeTierExperiments'));
   assert.ok(coreApiHandlers.includes('ScaffoldExperimentModule'));
   assert.ok(coreApiHandlers.includes('VerifyStepVision'));
   assert.ok(coreApiHandlers.includes('GenerateAcademicLabReport'));
+  assert.ok(coreApiHandlers.includes('SyncOfflineProgress'));
 
   // Verify apps/web api-client invokes the endpoints
   const webApiClient = fs.readFileSync(
@@ -78,7 +80,7 @@ test('Contract Conformance: 4-Level Age-Adaptive Levels Integrity', () => {
     'utf8'
   );
   const coreDomain = fs.readFileSync(
-    path.join(monorepoRoot, 'services/core-api/internal/domain/stem.go'),
+    path.join(monorepoRoot, 'services/core-api/internal/domain/entities.go'),
     'utf8'
   );
 
