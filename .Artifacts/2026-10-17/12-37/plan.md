@@ -15,15 +15,20 @@ initial_plan:
    - Verifikasi melalui `make test` dan push ke `origin/main`.
 
 revision:
-- Review Gate 3: Pastikan endpoint SSE streaming mematuhi Zero-RabbitMQ Directive (Direct HTTP/REST + `text/event-stream`).
-- Pastikan rendering LaTeX menggunakan parser markdown yang aman dari XSS sanitization.
-- Pastikan input gambar dioptimasi ke base64 kompresi sebelum dikirim ke endpoint `/ai/v1/chat/stream`.
+- Review Gate 3: User explicitly directed: "CUMAN PAKAI ADK, PAKAI UINYA ADK BUKAN BIKIN UI SENDIRI, setelah itu lempar ke docker".
+- Do NOT build a custom chat UI in React/Next.js (`ChatSTEMAssistant.tsx` removed).
+- Use the official Google ADK built-in Web UI (`google.adk.cli web` serving `/dev-ui/`).
+- Define the official Google ADK root agent `agents/rekasains/agent.py` exposing STEM tools (`check_chemical_safety`, `recommend_stem_experiments`, `get_formula_and_variables`).
+- Link directly to the official Google ADK Web UI from the web app header (`http://localhost:8081/dev-ui/`).
+- Proxy Google ADK Dev UI routes in Caddy reverse proxy (`/dev-ui/*`, `/apps/*`, `/dev/*`, `/run*`, `/list-apps*`).
+- Containerize and deploy the full stack to Docker via `docker compose up --build -d`.
 
 final_plan:
-- Step 1: Tulis spesifikasi `docs/features/FEAT-003-tanya-lab-ai-conversational-tutor.md` & update `docs/features/README.md`.
-- Step 2: Perbarui `contracts/api/openapi.yaml` dan tipe TypeScript di `packages/shared-types`.
-- Step 3: Implementasi endpoint streaming `/ai/v1/chat/stream` di `services/ai-agent` dengan Google ADK / Gemini 2.5 Flash.
-- Step 4: Implementasi migration database `004_create_chat_sessions_and_messages.sql` & sinkronisasi di `services/core-api`.
-- Step 5: Implementasi komponen antarmuka 'Tanya Lab AI' di `apps/web` (`ChatSTEMAssistant.tsx`, tab navigasi, IndexedDB storage, LaTeX parser).
-- Step 6: Tulis automated unit & integration test untuk endpoint chat dan rendering.
-- Step 7: Jalankan `make test`, ekspor `.Artifacts/.../result.md`, update `06-CURRENT-STATE.md` & `AGENTS.md`, lalu git commit dan push ke `origin/main`.
+- Step 1: Remove custom React chat component `ChatSTEMAssistant.tsx` and restore clean 4-layer STEM Lab UI in `apps/web/src/app/page.tsx` with top link to Google ADK Web UI.
+- Step 2: Create official Google ADK agent definition `services/ai-agent/agents/rekasains/agent.py` exporting `root_agent` with RekaSains STEM tools and safety guardrails.
+- Step 3: Configure `services/ai-agent/requirements.txt` (`google-adk>=2.12.0`) and `services/ai-agent/Dockerfile` (copy `agents`, update healthcheck, set CMD to `["python", "-m", "google.adk.cli", "web", "--host", "0.0.0.0", "--port", "8081", "agents"]`).
+- Step 4: Configure `deployments/proxy/Caddyfile` to reverse proxy `/dev-ui*`, `/list-apps*`, `/apps/*`, `/dev/*`, `/run*` to `ai-agent:8081`.
+- Step 5: Update automated tests in `apps/web/tests/web-engine.test.mjs` to assert Google ADK Web UI integration and `root_agent`.
+- Step 6: Verify all monorepo test suites (36 Node tests + 15 Python tests — 100% PASS).
+- Step 7: Build and deploy containers to Docker via `docker compose up --build -d` and verify all containers are running and healthy.
+- Step 8: Update audit artifacts (`plan.md`, `result.md`), `AGENTS.md`, `docs/context/06-CURRENT-STATE.md`, commit and push to `origin/main`.

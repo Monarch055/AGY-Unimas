@@ -16,7 +16,7 @@
 | **Sub-Part 3** | `services/ai-agent` | Phase 2: Python 3.12+ FastAPI + 6-Sub-Agent Google ADK (`VisionInventory`, `ResourceMatcher`, `CurriculumScaffolder`, `SafetyGuardian`, `StepVisionAndAR`, `LabReportSynthesizer`) | 🟢 **COMPLETED** | Sessions `11-40` & `11-47` | `2026-10-17 11:52` |
 | **Sub-Part 4** | `apps/web` | Phase 3: Next.js Mobile-First PWA, English UI Localization, KaTeX Math Rendering, Camera Scanner, Active Hazard Banner, HTML5 Canvas/SVG AR Overlay, 4-Level Graph Plotter, IndexedDB Offline Lab Pack & Editable PDF Lab Report Exporter | 🟢 **COMPLETED** | Sessions `11-38`, `12-33`, `12-36` | `2026-10-17 12:45` |
 | **Sub-Part 5** | `deployments/`, `Makefile`, `Taskfile.yml`, `package.json`, Dockerfiles | Full-Stack Docker Compose (profiles `infra` & `full`), Multi-Stage Container Dockerfiles (`web`, `core-api`, `ai-agent`), Caddy Reverse Proxy, IaC Terraform, Makefile & Taskfile orchestration | 🟢 **COMPLETED** | Sessions `12-00`, `12-25` | `2026-10-17 12:25` |
-| **Sub-Part 6** | `FEAT-003` (`ai-agent`, `core-api`, `apps/web`) | Tanya Lab AI: Conversational Multimodal STEM Tutor via pure Google ADK (`from google import genai`), SSE `/ai/v1/chat/stream`, Sub-Agent #7 `ConversationalTutorAgent`, `ChatSTEMAssistant.tsx`, IndexedDB chat cache, and migration `004` | 🟢 **COMPLETED** | Session `2026-10-17/12-37` | `2026-10-17 13:00` |
+| **Sub-Part 6** | `FEAT-003` (`ai-agent`, `core-api`, `apps/web`) | Tanya Lab AI: Pure Official Google ADK Web UI (`google.adk.cli web` at `/dev-ui/`), `agents/rekasains/agent.py` exporting `root_agent` with STEM tools, Caddy proxy routing, header direct link in `apps/web`, and full Docker Compose deployment | 🟢 **COMPLETED** | Sessions `12-37` & `13-10` | `2026-10-17 13:20` |
 
 ---
 

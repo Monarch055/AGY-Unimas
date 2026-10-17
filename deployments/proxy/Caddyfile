@@ -10,7 +10,22 @@
         reverse_proxy core-api:8080
     }
 
-    # Google ADK AI Agent API forwarding
+    # Google ADK AI Agent & Official Dev UI forwarding
+    handle /dev-ui* {
+        reverse_proxy ai-agent:8081
+    }
+    handle /list-apps* {
+        reverse_proxy ai-agent:8081
+    }
+    handle /apps/* {
+        reverse_proxy ai-agent:8081
+    }
+    handle /dev/* {
+        reverse_proxy ai-agent:8081
+    }
+    handle /run* {
+        reverse_proxy ai-agent:8081
+    }
     handle /ai/v1/* {
         reverse_proxy ai-agent:8081
     }

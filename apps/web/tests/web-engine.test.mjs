@@ -66,7 +66,6 @@ test('USP #1, #3, #5, #7, #8, #9, #10: Verify apps/web Source Files & Contract A
     'src/components/ThreeTierRecommendationExplorer.tsx',
     'src/components/AdaptiveSTEMModuleAndARLab.tsx',
     'src/components/AcademicLabReportPDFGenerator.tsx',
-    'src/components/ChatSTEMAssistant.tsx',
     'src/components/LatexRenderer.tsx',
     'src/app/layout.tsx',
     'src/app/page.tsx',
@@ -154,31 +153,21 @@ test('USP #5: KaTeX LaTeX Mathematical Equation Rendering', async () => {
   );
 });
 
-test('FEAT-003: Tanya Lab AI Conversational Tutor & Offline Chat Session Storage', () => {
+test('FEAT-003: Tanya Lab AI via Official Google ADK Web UI & Agent Integration', () => {
   const webRoot = path.resolve(__dirname, '..');
-  const chatComponent = fs.readFileSync(
-    path.join(webRoot, 'src/components/ChatSTEMAssistant.tsx'),
+  const pageContent = fs.readFileSync(
+    path.join(webRoot, 'src/app/page.tsx'),
     'utf8'
   );
-  assert.ok(chatComponent.includes('streamChatWithSTEMTutor'), 'Must invoke streamChatWithSTEMTutor');
-  assert.ok(chatComponent.includes('LatexText'), 'Must use LatexText KaTeX parser');
-  assert.ok(chatComponent.includes('saveChatSessionLocally'), 'Must persist sessions to IndexedDB');
-  assert.ok(chatComponent.includes('accept="image/*"'), 'Must support camera / image upload');
+  assert.ok(pageContent.includes('/dev-ui/'), 'page.tsx must link to Google ADK Web UI (/dev-ui/)');
 
-  const offlineDbContent = fs.readFileSync(
-    path.join(webRoot, 'src/lib/offline-db.ts'),
-    'utf8'
-  );
-  assert.ok(offlineDbContent.includes('saveChatSessionLocally'), 'offline-db must export saveChatSessionLocally');
-  assert.ok(offlineDbContent.includes('getChatSessionLocally'), 'offline-db must export getChatSessionLocally');
-  assert.ok(offlineDbContent.includes('listChatSessionsLocally'), 'offline-db must export listChatSessionsLocally');
-
-  const apiClientContent = fs.readFileSync(
-    path.join(webRoot, 'src/lib/api-client.ts'),
-    'utf8'
-  );
-  assert.ok(apiClientContent.includes('streamChatWithSTEMTutor'), 'api-client must export streamChatWithSTEMTutor');
-  assert.ok(apiClientContent.includes('/ai/v1/chat/stream'), 'api-client must target /ai/v1/chat/stream');
+  const monorepoRoot = path.resolve(webRoot, '../..');
+  const agentFile = path.join(monorepoRoot, 'services/ai-agent/agents/rekasains/agent.py');
+  assert.ok(fs.existsSync(agentFile), 'Google ADK agent.py must exist in agents/rekasains/');
+  const agentContent = fs.readFileSync(agentFile, 'utf8');
+  assert.ok(agentContent.includes('root_agent = Agent('), 'Must define root_agent as Google ADK Agent');
+  assert.ok(agentContent.includes('check_chemical_safety'), 'Must include safety tool');
+  assert.ok(agentContent.includes('recommend_stem_experiments'), 'Must include recommendation tool');
 });
 
 

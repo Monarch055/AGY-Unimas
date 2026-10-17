@@ -38,8 +38,9 @@
 
 ### Layer 4: Frameworks & Drivers
 - FastAPI & Google ADK / Gemini 2.5 Flash SDK (`services/ai-agent`).
+- Official Google ADK Web UI (`google.adk.cli web` serving `/dev-ui/`) with root agent `agents/rekasains/agent.py` exposing STEM tools (`check_chemical_safety`, `recommend_stem_experiments`, `get_formula_and_variables`).
 - Gin Router & PostgreSQL 16 Driver `pgx` (`services/core-api`).
-- Next.js React PWA + KaTeX & Markdown parser (`apps/web`).
+- Next.js React PWA linking to Google ADK Web UI + KaTeX & Markdown parser (`apps/web`).
 
 ---
 

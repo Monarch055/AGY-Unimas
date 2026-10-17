@@ -160,6 +160,14 @@ Setiap service mematuhi 4 layer Robert C. Martin dengan **Inward Dependency Rule
 ## Journal of Notable Architectural Decisions
 
 <!-- Append notable entries newest on top -->
+- **[2026-10-17 13:20] [MULTI-AGENT BROADCAST — SESSION `13-10` COMPLETED]** Integrated Official Google ADK Web UI & Dockerized Multi-Container Stack:
+  - Removed custom React chat UI per explicit user directive: used pure official Google ADK built-in Web UI (`google.adk.cli web` serving `/dev-ui/`).
+  - Implemented root Google ADK agent definition `services/ai-agent/agents/rekasains/agent.py` exporting `root_agent` with STEM tools (`check_chemical_safety`, `recommend_stem_experiments`, `get_formula_and_variables`) and hazardous chemical co-location guardrails.
+  - Pinned `google-adk>=2.12.0` in `services/ai-agent/requirements.txt` and configured `services/ai-agent/Dockerfile` to copy `agents` and run `python -m google.adk.cli web --host 0.0.0.0 --port 8081 agents`.
+  - Configured `deployments/proxy/Caddyfile` reverse proxy handles for `/dev-ui*`, `/list-apps*`, `/apps/*`, `/dev/*`, and `/run*` forwarding directly to `ai-agent:8081`.
+  - Added direct link button in `apps/web/src/app/page.tsx` header to access the Google ADK Web UI at `/dev-ui/`.
+  - Verified 100% test pass rate across Node and Python test suites (36 Node tests + 15 Python tests = 51/51 PASS).
+  - Deployed full stack with Docker Compose (`docker compose up --build -d`) orchestrating Caddy (80), Core-API (8080), AI-Agent (8081), Web (3000), PostgreSQL (5432), and Valkey/Redis (6379).
 - **[2026-10-17 13:00] [MULTI-AGENT BROADCAST — SESSION `12-37` COMPLETED]** Implemented **FEAT-003: Tanya Lab AI — Conversational Multimodal STEM Tutor**:
   - Implemented Sub-Agent #7 `ConversationalTutorAgent` in `services/ai-agent` using pure Google GenAI / ADK (`from google import genai`) streaming via Server-Sent Events (SSE `text/event-stream` at `/ai/v1/chat/stream`).
   - Implemented proactive safety guardrails against toxic gas co-location (NaOCl bleach + acidic cleaner/ammonia) with immediate red alert interception.
