@@ -66,6 +66,7 @@ test('USP #1, #3, #5, #7, #8, #9, #10: Verify apps/web Source Files & Contract A
     'src/components/ThreeTierRecommendationExplorer.tsx',
     'src/components/AdaptiveSTEMModuleAndARLab.tsx',
     'src/components/AcademicLabReportPDFGenerator.tsx',
+    'src/components/LatexRenderer.tsx',
     'src/app/layout.tsx',
     'src/app/page.tsx',
   ];
@@ -123,3 +124,32 @@ test('USP #1, #3, #5, #7, #8, #9, #10: Verify apps/web Source Files & Contract A
     'Must provide computeAnalyticalGraphSeries for SMA/University analytical graph plotting'
   );
 });
+
+test('USP #5: KaTeX LaTeX Mathematical Equation Rendering', async () => {
+  const latexRendererContent = fs.readFileSync(
+    path.join(__dirname, '..', 'src', 'components', 'LatexRenderer.tsx'),
+    'utf8'
+  );
+  assert.ok(
+    latexRendererContent.includes('katex.renderToString'),
+    'Must invoke katex.renderToString'
+  );
+  assert.ok(
+    latexRendererContent.includes('sanitizeLatexFormula'),
+    'Must provide sanitizeLatexFormula'
+  );
+
+  // Test dynamic import of katex and verification of formula rendering
+  const katex = await import('katex').then((m) => m.default || m);
+  const rendered = katex.renderToString('I = \\frac{V}{R}', {
+    displayMode: false,
+    throwOnError: false,
+  });
+  assert.ok(rendered.includes('class="katex"'), 'Rendered HTML must contain KaTeX root class');
+  assert.ok(rendered.includes('<math'), 'Rendered HTML must include accessible MathML markup');
+  assert.ok(
+    rendered.includes('frac-line') || rendered.includes('mfrac'),
+    'Rendered HTML must include fraction markup'
+  );
+});
+

@@ -40,9 +40,7 @@ export function ThreeTierRecommendationExplorer({
             USP #2, #3 &amp; #4 • ResourceMatcherAgent (3-Tier + Functional Substitutes)
           </span>
           <h2 className="mt-1 text-xl font-bold text-white">
-            {isMY
-              ? '2. Cadangan Eksperimen 3-Tier, Substitusi Fungsi & Kedai Sekitar (RM)'
-              : '2. Rekomendasi Eksperimen 3-Tier, Substitusi Bahan & Toko Sekitar (Rp)'}
+            2. 3-Tier Experiment Recommendations, Functional Substitutes &amp; Local Stores ({isMY ? 'RM' : 'Rp'})
           </h2>
         </div>
 
@@ -57,7 +55,7 @@ export function ThreeTierRecommendationExplorer({
                 : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
             }`}
           >
-            🟢 Tier 1: 100% Siap ({matchData.strict_100_matches.length})
+            🟢 Tier 1: 100% Ready ({matchData.strict_100_matches.length})
           </button>
           <button
             type="button"
@@ -68,7 +66,7 @@ export function ThreeTierRecommendationExplorer({
                 : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
             }`}
           >
-            🛠️ Tier 2: Substitusi Fungsi / DIY ({matchData.diy_substitute_matches.length})
+            🛠️ Tier 2: Functional / DIY Substitutes ({matchData.diy_substitute_matches.length})
           </button>
           <button
             type="button"
@@ -79,7 +77,7 @@ export function ThreeTierRecommendationExplorer({
                 : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
             }`}
           >
-            🛒 Tier 3: {isMY ? 'Kedai Runcit / MR.DIY (RM)' : 'Warung / Minimarket (Rp)'} (
+            🛒 Tier 3: {isMY ? 'Retail / MR.DIY (RM)' : 'Local Stores / Minimarket (Rp)'} (
             {matchData.local_micro_shop_matches.length})
           </button>
         </div>
@@ -116,13 +114,7 @@ export function ThreeTierRecommendationExplorer({
                   onClick={() => onSelectExperiment(card.experiment_slug)}
                   className="shrink-0 rounded-xl bg-cyan-500 px-4 py-2 text-xs font-bold text-slate-950 hover:bg-cyan-400"
                 >
-                  {isSelected
-                    ? isMY
-                      ? '✓ Modul Aktif'
-                      : '✓ Modul Sedang Dibuka'
-                    : isMY
-                    ? 'Buka Modul & AR Lab →'
-                    : 'Buka Modul & AR Lab →'}
+                  {isSelected ? '✓ Active Module' : 'Open Module & AR Lab →'}
                 </button>
               </div>
 
@@ -130,18 +122,18 @@ export function ThreeTierRecommendationExplorer({
               {card.functional_substitutes.length > 0 && (
                 <div className="mt-3 rounded-lg border border-cyan-500/40 bg-cyan-950/30 p-3">
                   <div className="text-xs font-bold uppercase tracking-wide text-cyan-300">
-                    🔄 {isMY ? 'Rekomendasi Substitusi Bahan Berfungsi Serupa (USP #3)' : 'Rekomendasi Substitusi Bahan Berfungsi Fisika/Kimia Serupa (USP #3)'}
+                    🔄 Alternative Material Recommendation — Equivalent Physics/Chemistry Function (USP #3)
                   </div>
                   {card.functional_substitutes.map((sub) => (
                     <div key={sub.missing_material_slug} className="mt-2 text-xs text-slate-200">
                       <p>
-                        <strong>{isMY ? 'Bahan Kurang' : 'Bahan Kurang'}:</strong>{' '}
+                        <strong>Missing Material:</strong>{' '}
                         <span className="line-through text-amber-300">{sub.missing_name_local}</span>{' '}
-                        ➔ <strong>{isMY ? 'Diganti Dengan' : 'Disubstitusi Dengan'}:</strong>{' '}
+                        ➔ <strong>Substituted With:</strong>{' '}
                         <span className="font-bold text-emerald-300">{sub.substitute_name_local}</span>
                       </p>
                       <p className="mt-1 text-cyan-200">
-                        <strong>Prinsip Ilmiah Setara:</strong> {sub.shared_scientific_principle}
+                        <strong>Equivalent Scientific Principle:</strong> {sub.shared_scientific_principle}
                       </p>
                       <ul className="mt-1 list-disc pl-5 text-slate-300">
                         {sub.adaptation_steps.map((step, idx) => (
@@ -157,7 +149,7 @@ export function ThreeTierRecommendationExplorer({
               {card.missing_local_shop_items.length > 0 && (
                 <div className="mt-3 rounded-lg border border-amber-500/40 bg-amber-950/20 p-3">
                   <div className="text-xs font-bold uppercase tracking-wide text-amber-300">
-                    🛒 {isMY ? 'Panduan Belian Murah di Kedai Sekitar (USP #4)' : 'Panduan Belanja Bahan Murah di Toko Sekitar (USP #4)'}
+                    🛒 Local Low-Cost Store Purchasing Guide (USP #4)
                   </div>
                   <div className="mt-2 grid gap-2 md:grid-cols-2">
                     {card.missing_local_shop_items.map((shop) => (
@@ -174,7 +166,7 @@ export function ThreeTierRecommendationExplorer({
                           </span>
                         </div>
                         <p className="mt-1 text-slate-300">
-                          <strong>{isMY ? 'Kedai Disyorkan' : 'Toko Rekomendasi'}:</strong>{' '}
+                          <strong>Recommended Stores:</strong>{' '}
                           {shop.recommended_stores.join(', ')}
                         </p>
                         <div className="mt-2 flex flex-wrap gap-2">
@@ -184,7 +176,7 @@ export function ThreeTierRecommendationExplorer({
                             rel="noopener noreferrer"
                             className="rounded bg-slate-700 px-2.5 py-1 font-semibold text-cyan-300 hover:bg-slate-600"
                           >
-                            📍 Cari di Google Maps
+                            📍 Find on Google Maps
                           </a>
                           <a
                             href={shop.marketplace_search_url}
@@ -192,7 +184,7 @@ export function ThreeTierRecommendationExplorer({
                             rel="noopener noreferrer"
                             className="rounded bg-slate-700 px-2.5 py-1 font-semibold text-emerald-300 hover:bg-slate-600"
                           >
-                            🛍️ {isMY ? 'Beli di Shopee MY' : 'Beli di Tokopedia / Shopee'}
+                            🛍️ {isMY ? 'Buy on Shopee MY' : 'Buy on Tokopedia / Shopee'}
                           </a>
                         </div>
                       </div>

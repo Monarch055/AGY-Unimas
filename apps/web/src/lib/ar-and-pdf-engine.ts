@@ -5,6 +5,7 @@
  * - USP #10: Dual-Mode (Online + Offline) Academic Lab Report PDF Document Builder
  */
 
+import katex from 'katex';
 import {
   clampNormalizedCoordinate,
   toViewportPixels,
@@ -17,6 +18,35 @@ import type {
   ObservationDataRowDTO,
   ScientificVariablesAndGraphSchemaDTO,
 } from '@rekasains/shared-types';
+
+/**
+ * Sanitizes and renders a LaTeX mathematical formula into accessible HTML + MathML via KaTeX.
+ */
+export function renderLatexFormula(rawLatex: string, displayMode = false): string {
+  if (!rawLatex) return '';
+  let cleaned = rawLatex.trim();
+  if (cleaned.startsWith('\\(') && cleaned.endsWith('\\)')) {
+    cleaned = cleaned.slice(2, -2).trim();
+  } else if (cleaned.startsWith('\\[') && cleaned.endsWith('\\]')) {
+    cleaned = cleaned.slice(2, -2).trim();
+  } else if (cleaned.startsWith('$$') && cleaned.endsWith('$$')) {
+    cleaned = cleaned.slice(2, -2).trim();
+  } else if (cleaned.startsWith('$') && cleaned.endsWith('$') && cleaned.length > 2) {
+    cleaned = cleaned.slice(1, -1).trim();
+  }
+  cleaned = cleaned.replace(/\\\\([a-zA-Z]+)/g, (_match, cmd) => `\\${cmd}`);
+
+  try {
+    return katex.renderToString(cleaned, {
+      displayMode,
+      throwOnError: false,
+      output: 'htmlAndMathml',
+      strict: false,
+    });
+  } catch (_e) {
+    return `<code class="font-mono text-cyan-300 font-bold">${escapeHtml(cleaned)}</code>`;
+  }
+}
 
 export interface ProjectedARVector {
   label: string;
@@ -254,42 +284,38 @@ export function buildOfflineLabReportFallback(
   const isMY = request.region === 'MY';
 
   const variablesSummary = variablesSpec
-    ? isMY
-      ? `Pembolehubah Manipulasi (Bebas): ${variablesSpec.independent_variable} | Pembolehubah Bergerak Balas (Terikat): ${variablesSpec.dependent_variable} | Pembolehubah Dimalarkan (Kontrol): ${variablesSpec.control_variables.join(', ')}`
-      : `Variabel Bebas: ${variablesSpec.independent_variable} | Variabel Terikat: ${variablesSpec.dependent_variable} | Variabel Kontrol: ${variablesSpec.control_variables.join(', ')}`
-    : isMY
-    ? 'Pemerhatian fenomena sains secara langsung mengikut langkah kerja modul.'
-    : 'Pengamatan fenomena sains secara langsung sesuai tahapan modul eksperimen.';
+    ? `Independent Variable (X): ${variablesSpec.independent_variable} | Dependent Variable (Y): ${variablesSpec.dependent_variable} | Controlled Variables: ${variablesSpec.control_variables.join(', ')}`
+    : 'Direct observation of physical scientific phenomena following module procedure.';
 
   const discussionText = isMY
-    ? `Berdasarkan ${request.observation_data_rows.length} titik data pemerhatian bagi eksperimen "${experimentTitle}", hubungan antara pembolehubah menunjukkan persamaan regresi ${graph.regressionLine.equationText}. Fenomena ini mengesahkan hukum fizik/kimia yang dikaji secara empirikal.`
-    : `Berdasarkan ${request.observation_data_rows.length} data pengamatan pada praktikum "${experimentTitle}", diperoleh persamaan analisis tren ${graph.regressionLine.equationText}. Data empiris ini membuktikan kesesuaian antara eksperimen alat sekitar dengan teori sains.`;
+    ? `Based on ${request.observation_data_rows.length} observation data points for the experiment "${experimentTitle}", the variable relationship demonstrates the regression equation ${graph.regressionLine.equationText}. This empirical data verifies the physical laws studied.`
+    : `Based on ${request.observation_data_rows.length} observation data points in the experiment "${experimentTitle}", the regression analysis yielded ${graph.regressionLine.equationText}. This empirical data validates the correlation between everyday household apparatus and scientific theory.`;
 
   return {
     report_id: `offline-rpt-${experimentSlug}-${Date.now()}`,
     title_local: experimentTitle,
     objective_local: isMY
-      ? `Mengkaji dan membuktikan prinsip sains pada ${experimentTitle} secara eksperimen dan kuantitatif.`
-      : `Menganalisis dan membuktikan prinsip ilmiah pada ${experimentTitle} secara eksperimental dan kuantitatif.`,
+      ? `Investigate and verify the scientific principles of ${experimentTitle} experimentally and quantitatively.`
+      : `Analyze and demonstrate the scientific principles of ${experimentTitle} experimentally and quantitatively.`,
     theoretical_summary: variablesSpec
-      ? `Rumus Utama (LaTeX): ${variablesSpec.formulas_latex.join(' ; ')}`
-      : 'Konsep STEM terintegrasi sesuai Kurikulum Merdeka (ID) & KSSR/KSSM (MY).',
+      ? `Governing Equation (LaTeX): ${variablesSpec.formulas_latex.join(' ; ')}`
+      : 'Integrated STEM concepts aligned with Kurikulum Merdeka (ID) & KSSR/KSSM (MY).',
     variables_summary: variablesSummary,
     materials_used_list: [
-      '2x Baterai AA 1.5V (Battery AA)',
-      '2x Kabel Penghantar / Penjepit Buaya',
-      '1x Kaleng Aluminium Bekas / Lampu LED Indikator',
-      '1x Sedotan Plastik Tebal (Substitusi Fungsi Pipa Isolator)',
+      '2x AA Battery 1.5V (Battery AA)',
+      '2x Jumper Wires / Alligator Clips',
+      '1x Recycled Aluminum Can / LED Indicator Light',
+      '1x Thick Plastic Straw (Functional Substitute for Insulating PVC Pipe)',
     ],
     procedure_summary: [
-      'Memindai area kerja dengan kamera RekaSains dan memastikan bebas dari ko-lokasi bahan berbahaya.',
-      'Merakit komponen sesuai panduan interaktif dan memverifikasi langkah melalui AI Vision Step Checker.',
-      'Mengamati simulasi AR Overlay aliran elektron/vektor gaya dan mencatat data pengamatan multi-trial.',
+      'Scan the workbench with RekaSains camera and confirm zero hazardous chemical co-location.',
+      'Assemble components following interactive guidance and verify steps with AI Vision Step Checker.',
+      'Observe AR Overlay simulation of electron flow / force vectors and record multi-trial observation data.',
     ],
     result_analysis_discussion: discussionText,
     conclusion_local: isMY
-      ? `Hipotesis diterima. Eksperimen "${experimentTitle}" berjaya dijalankan dengan selamat dan mengesahkan hubungan ${graph.regressionLine.equationText}.`
-      : `Hipotesis terbukti. Praktikum "${experimentTitle}" berhasil dijalankan dengan aman serta membuktikan hubungan variabel ${graph.regressionLine.equationText}.`,
+      ? `Hypothesis accepted. The experiment "${experimentTitle}" was executed safely and confirmed the relationship ${graph.regressionLine.equationText}.`
+      : `Hypothesis confirmed. The experiment "${experimentTitle}" was conducted safely and verified the variable relationship ${graph.regressionLine.equationText}.`,
     generated_at_utc: new Date().toISOString(),
   };
 }
@@ -308,11 +334,11 @@ export function buildAcademicLabReportPrintableHTML(
   const headerBadge =
     request.age_adaptive_level === 'HIGHER_ED_UNI'
       ? isMY
-        ? 'LAPORAN AMALI UNIVERSITI / PENGAJIAN TINGGI'
-        : 'LAPORAN PRAKTIKUM PERGURUAN TINGGI (STANDAR DIKTI)'
+        ? 'HIGHER EDUCATION ACADEMIC LAB REPORT / LAPORAN AMALI UNIVERSITI'
+        : 'HIGHER EDUCATION ACADEMIC LAB REPORT / LAPORAN PRAKTIKUM PERGURUAN TINGGI'
       : isMY
-      ? 'LAPORAN AMALI SAINS SEKOLAH (KSSR / KSSM)'
-      : 'LAPORAN PRAKTIKUM SAINS SEKOLAH (KURIKULUM MERDEKA)';
+      ? 'SECONDARY SCHOOL ACADEMIC LAB REPORT / LAPORAN AMALI SAINS (KSSR / KSSM)'
+      : 'SECONDARY SCHOOL ACADEMIC LAB REPORT / LAPORAN PRAKTIKUM SAINS SEKOLAH (KURIKULUM MERDEKA)';
 
   const rowsHtml = request.observation_data_rows
     .map(
@@ -342,10 +368,11 @@ export function buildAcademicLabReportPrintableHTML(
     .join('');
 
   return `<!DOCTYPE html>
-<html lang="${isMY ? 'ms-MY' : 'id-ID'}">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <title>${escapeHtml(report.title_local)} - ${escapeHtml(request.student_name)}</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" />
   <style>
     @page { size: A4; margin: 18mm; }
     body { font-family: 'Segoe UI', Arial, sans-serif; color: #0B132B; line-height: 1.5; font-size: 11pt; }
@@ -366,42 +393,52 @@ export function buildAcademicLabReportPrintableHTML(
     <div>
       <span class="badge">${escapeHtml(headerBadge)}</span>
       <h1>${escapeHtml(report.title_local)}</h1>
-      <div>ID Dokumen: <code>${escapeHtml(report.report_id)}</code> | Jenjang: <strong>${escapeHtml(request.age_adaptive_level)}</strong></div>
+      <div>Document ID: <code>${escapeHtml(report.report_id)}</code> | Level: <strong>${escapeHtml(request.age_adaptive_level)}</strong></div>
     </div>
   </div>
 
   <table class="meta-table">
     <tr>
-      <td><strong>${isMY ? 'Nama Pelajar / Mahasiswa' : 'Nama Siswa / Mahasiswa'}:</strong> ${escapeHtml(request.student_name)}</td>
-      <td><strong>${isMY ? 'Institusi / Sekolah' : 'Sekolah / Universitas'}:</strong> ${escapeHtml(request.institution_name)}</td>
+      <td><strong>Student Name:</strong> ${escapeHtml(request.student_name)}</td>
+      <td><strong>Institution / School:</strong> ${escapeHtml(request.institution_name)}</td>
     </tr>
     <tr>
-      <td><strong>${isMY ? 'Kelas / No. Matrik' : 'Kelas / NIM'}:</strong> ${escapeHtml(request.class_or_nim)}</td>
-      <td><strong>${isMY ? 'Guru / Pensyarah Pembimbing' : 'Guru / Dosen Pembimbing'}:</strong> ${escapeHtml(request.instructor_name || '-')}</td>
+      <td><strong>Class / Student ID:</strong> ${escapeHtml(request.class_or_nim)}</td>
+      <td><strong>Instructor / Advisor:</strong> ${escapeHtml(request.instructor_name || '-')}</td>
     </tr>
   </table>
 
-  <h2>1. ${isMY ? 'Tujuan Amali' : 'Tujuan Praktikum'}</h2>
+  <h2>1. Experimental Objective</h2>
   <p>${escapeHtml(report.objective_local)}</p>
 
-  <h2>2. ${isMY ? 'Landasan Teori, Rumus & Pembolehubah' : 'Landasan Teori, Rumus & Variabel Penelitian'}</h2>
+  <h2>2. Theoretical Background, Formulas &amp; Variables</h2>
   <p>${escapeHtml(report.theoretical_summary)}</p>
-  <p><strong>${isMY ? 'Spesifikasi Pembolehubah' : 'Spesifikasi Variabel'}:</strong> ${escapeHtml(report.variables_summary || '-')}</p>
+  ${
+    variablesSpec && variablesSpec.formulas_latex && variablesSpec.formulas_latex.length > 0
+      ? `<div class="formulas-latex-box" style="margin: 10px 0; padding: 10px 14px; background: #F8FAFC; border: 1px solid #CBD5E1; border-radius: 6px;">
+          <div style="font-size: 9pt; font-weight: bold; color: #475569; margin-bottom: 6px;">Mathematical / Physics Formulas (KaTeX Rendered):</div>
+          <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: center; justify-content: flex-start;">
+            ${variablesSpec.formulas_latex.map((f) => `<div style="padding: 4px 10px; background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 4px;">${renderLatexFormula(f, false)}</div>`).join('')}
+          </div>
+        </div>`
+      : ''
+  }
+  <p><strong>Variable Specifications:</strong> ${escapeHtml(report.variables_summary || '-')}</p>
 
-  <h2>3. ${isMY ? 'Alat, Bahan & Substitusi Fungsi' : 'Alat, Bahan & Substitusi Fungsi'}</h2>
+  <h2>3. Apparatus, Materials &amp; Functional Substitutes</h2>
   <ul>${materialsHtml}</ul>
 
-  <h2>4. ${isMY ? 'Prosedur Langkah Kerja Terverifikasi AI Vision' : 'Prosedur Langkah Kerja Terverifikasi AI Vision'}</h2>
+  <h2>4. Experimental Procedure Verified by AI Vision</h2>
   <ol>${proceduresHtml}</ol>
 
-  <h2>5. ${isMY ? 'Jadual Data Pemerhatian & Graf Analisis' : 'Tabel Data Pengamatan & Grafik Analisis'}</h2>
+  <h2>5. Observation Data Table &amp; Analytical Graph</h2>
   <table class="data-table">
     <thead>
       <tr>
         <th>Trial #</th>
-        <th>${escapeHtml(variablesSpec?.x_axis_label || 'Variabel Bebas (X)')}</th>
-        <th>${escapeHtml(variablesSpec?.y_axis_label || 'Variabel Terikat (Y)')}</th>
-        <th>${isMY ? 'Catatan Pemerhatian' : 'Catatan Pengamatan'}</th>
+        <th>${escapeHtml(variablesSpec?.x_axis_label || 'Independent Variable (X)')}</th>
+        <th>${escapeHtml(variablesSpec?.y_axis_label || 'Dependent Variable (Y)')}</th>
+        <th>Observation Notes</th>
       </tr>
     </thead>
     <tbody>${rowsHtml}</tbody>
@@ -417,15 +454,15 @@ export function buildAcademicLabReportPrintableHTML(
     </svg>
   </div>
 
-  <h2>6. ${isMY ? 'Perbincangan Analisis Sains' : 'Pembahasan Analisis Sains'}</h2>
+  <h2>6. Scientific Analysis Discussion</h2>
   <p>${escapeHtml(report.result_analysis_discussion)}</p>
 
-  <h2>7. ${isMY ? 'Kesimpulan' : 'Kesimpulan'}</h2>
+  <h2>7. Conclusion</h2>
   <p>${escapeHtml(report.conclusion_local)}</p>
 
   <div class="footer-sign">
-    <div>Dicetak melalui <strong>RekaSains AI-Native STEM Lab</strong> pada ${escapeHtml(report.generated_at_utc)}</div>
-    <div>Tanda Tangan: ___________________________ (${escapeHtml(request.student_name)})</div>
+    <div>Generated via <strong>RekaSains AI-Native STEM Lab</strong> on ${escapeHtml(report.generated_at_utc)}</div>
+    <div>Signature: ___________________________ (${escapeHtml(request.student_name)})</div>
   </div>
 </body>
 </html>`;

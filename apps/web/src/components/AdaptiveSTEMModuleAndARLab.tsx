@@ -14,6 +14,7 @@ import {
   projectAROverlayToViewport,
 } from '../lib/ar-and-pdf-engine';
 import { verifyExperimentStepVision } from '../lib/api-client';
+import { LatexRenderer, LatexText } from './LatexRenderer';
 
 interface AdaptiveSTEMModuleProps {
   region: RegionCode;
@@ -28,20 +29,20 @@ interface AdaptiveSTEMModuleProps {
 
 const AGE_LEVEL_LABELS: Record<AgeAdaptiveLevelEnum, { id: string; my: string }> = {
   SD_ELEMENTARY: {
-    id: '🎒 SD (Fase A–C • Fenomena Visual)',
-    my: '🎒 Sekolah Rendah (Darjah 1–6 • Visual)',
+    id: '🎒 Elementary (Stage A–C • Visual Phenomena)',
+    my: '🎒 Primary School (Standard 1–6 • Visual)',
   },
   SMP_LOWER_SEC: {
-    id: '🔬 SMP (Fase D • Konsep & Kausalitas)',
-    my: '🔬 Menengah Rendah (Tingkatan 1–3)',
+    id: '🔬 Junior High (Stage D • Concepts & Causality)',
+    my: '🔬 Lower Secondary (Form 1–3 • Concepts)',
   },
   SMA_UPPER_SEC: {
-    id: '📐 SMA/SMK (Fase E–F • Rumus LaTeX & Grafik)',
-    my: '📐 Menengah Atas (Tingkatan 4–5 • Rumus & Graf)',
+    id: '📐 Senior High (Stage E–F • LaTeX & Graphs)',
+    my: '📐 Upper Secondary (Form 4–5 • Formulas & Graphs)',
   },
   HIGHER_ED_UNI: {
-    id: '🎓 Mahasiswa / Perguruan Tinggi (Regresi & Galat)',
-    my: '🎓 Universiti / Matrikulasi (Analisis Kuantitatif)',
+    id: '🎓 University / College (Regression & Uncertainty)',
+    my: '🎓 University / Matriculation (Quantitative Analysis)',
   },
 };
 
@@ -138,7 +139,7 @@ export function AdaptiveSTEMModuleAndARLab({
         trial_number: nextTrial,
         x_value: nextTrial * 1.5,
         y_value: nextTrial * 120,
-        notes: isMY ? `Cubaan ke-${nextTrial}` : `Pengukuran ke-${nextTrial}`,
+        notes: `Trial measurement #${nextTrial}`,
       },
     ]);
   };
@@ -152,7 +153,7 @@ export function AdaptiveSTEMModuleAndARLab({
             USP #5, #6, #8 &amp; #9 • CurriculumScaffolderAgent + StepVisionAndARAgent
           </span>
           <span className="rounded-lg bg-slate-800 px-3 py-1 text-xs font-medium text-emerald-300">
-            📦 OfflineLabPack v{module.offline_pack_version} Tersimpan di IndexedDB
+            📦 OfflineLabPack v{module.offline_pack_version} Cached in IndexedDB
           </span>
         </div>
 
@@ -163,9 +164,7 @@ export function AdaptiveSTEMModuleAndARLab({
         {/* 4-Level Age-Adaptive Filter Buttons */}
         <div>
           <div className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-slate-400">
-            {isMY
-              ? 'Pilih Tahap Kesukaran & Kedalaman Sains (USP #5):'
-              : 'Pilih Jenjang Kesulitan & Kedalaman Sains Adaptif (USP #5):'}
+            Select Scientific Depth &amp; Difficulty Level (USP #5):
           </div>
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
             {(Object.keys(AGE_LEVEL_LABELS) as AgeAdaptiveLevelEnum[]).map((lvl) => (
@@ -190,7 +189,9 @@ export function AdaptiveSTEMModuleAndARLab({
       <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-3">
           <div className="text-xs font-bold text-cyan-400">🔬 SCIENCE</div>
-          <p className="mt-1 text-xs text-slate-200">{module.stem_concepts.science}</p>
+          <div className="mt-1 text-xs text-slate-200">
+            <LatexText text={module.stem_concepts.science} />
+          </div>
         </div>
         <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-3">
           <div className="text-xs font-bold text-emerald-400">💻 TECHNOLOGY</div>
@@ -202,9 +203,9 @@ export function AdaptiveSTEMModuleAndARLab({
         </div>
         <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-3">
           <div className="text-xs font-bold text-purple-400">📐 MATHEMATICS</div>
-          <p className="mt-1 font-mono text-xs text-slate-200">
-            {module.stem_concepts.mathematics}
-          </p>
+          <div className="mt-1 text-xs text-slate-200">
+            <LatexText text={module.stem_concepts.mathematics} />
+          </div>
         </div>
       </div>
 
@@ -214,10 +215,10 @@ export function AdaptiveSTEMModuleAndARLab({
         <div className="lg:col-span-6 rounded-xl border border-slate-700 bg-slate-950/70 p-4">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-bold uppercase tracking-wider text-cyan-300">
-              📸 {isMY ? 'Panduan Langkah & AI Vision Checker (USP #8)' : 'Panduan Langkah & AI Vision Step Checker (USP #8)'}
+              📸 Step-by-Step Guidance &amp; AI Vision Step Checker (USP #8)
             </h3>
             <span className="text-xs text-slate-400">
-              Langkah {currentStep?.step_number} / {module.steps.length}
+              Step {currentStep?.step_number} / {module.steps.length}
             </span>
           </div>
 
@@ -239,7 +240,7 @@ export function AdaptiveSTEMModuleAndARLab({
                       : 'bg-slate-800 text-slate-400'
                   }`}
                 >
-                  {verified ? '✓ ' : ''}Langkah {st.step_number}
+                  {verified ? '✓ ' : ''}Step {st.step_number}
                 </button>
               );
             })}
@@ -250,7 +251,7 @@ export function AdaptiveSTEMModuleAndARLab({
               <p className="text-sm font-medium text-white">{currentStep.instruction}</p>
               {currentStep.requires_vision_verification && (
                 <p className="mt-1.5 text-xs text-cyan-300">
-                  🎯 <strong>Kriteria Kamera AI:</strong> {currentStep.vision_verification_prompt}
+                  🎯 <strong>AI Camera Verification Criteria:</strong> {currentStep.vision_verification_prompt}
                 </p>
               )}
 
@@ -263,10 +264,8 @@ export function AdaptiveSTEMModuleAndARLab({
                     className="rounded-xl bg-cyan-500 px-3.5 py-2 text-xs font-bold text-slate-950 hover:bg-cyan-400"
                   >
                     {verifyingStep
-                      ? 'Menganalisis Rakitan...'
-                      : isMY
-                      ? '📷 Sahkan Langkah Ini dengan Kamera AI'
-                      : '📷 Verifikasi Langkah Ini dengan Kamera AI'}
+                      ? 'Analyzing Assembly...'
+                      : '📷 Verify Step with AI Camera'}
                   </button>
                 )}
 
@@ -276,7 +275,7 @@ export function AdaptiveSTEMModuleAndARLab({
                   onClick={() => handleOfflineManualCheckpoint(currentStep.step_number)}
                   className="rounded-xl border border-slate-600 bg-slate-800 px-3 py-2 text-xs font-semibold text-slate-200 hover:bg-slate-700"
                 >
-                  ✓ {isOfflineMode ? 'Konfirmasi Mandiri (Mode Offline Aktif)' : 'Lanjut Manual / Mode Offline'}
+                  ✓ {isOfflineMode ? 'Self Checkpoint (Offline Mode Active)' : 'Proceed Manually / Offline Checkpoint'}
                 </button>
               </div>
 
@@ -295,7 +294,7 @@ export function AdaptiveSTEMModuleAndARLab({
               {manualOfflineSteps[currentStep.step_number] &&
                 !stepVerificationMap[currentStep.step_number] && (
                   <div className="mt-3 rounded-lg border border-amber-500/50 bg-amber-950/30 p-2.5 text-xs text-amber-200">
-                    ✓ Langkah {currentStep.step_number} dikonfirmasi via Hybrid Offline Checkpoint.
+                    ✓ Step {currentStep.step_number} confirmed via Hybrid Offline Checkpoint.
                   </div>
                 )}
             </div>
@@ -306,7 +305,7 @@ export function AdaptiveSTEMModuleAndARLab({
         <div className="lg:col-span-6 rounded-xl border border-cyan-500/40 bg-slate-950/90 p-4">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-bold uppercase tracking-wider text-cyan-300">
-              🕶️ {isMY ? 'Simulasi AR Overlay Benda Nyata (USP #9)' : 'Simulasi AR Overlay di Atas Benda Nyata (USP #9)'}
+              🕶️ Augmented Reality (AR) Overlay Simulation on Physical Objects (USP #9)
             </h3>
             <span className="rounded bg-cyan-500/20 px-2 py-0.5 text-xs font-mono text-cyan-300">
               {activeAROverlay.overlay_type}
@@ -358,10 +357,10 @@ export function AdaptiveSTEMModuleAndARLab({
               />
               <rect x="175" y="122" width="12" height="36" rx="3" fill="#F59E0B" />
               <text x="72" y="138" fill="#F8FAFC" fontSize="12" fontWeight="bold">
-                Baterai AA 1.5V
+                AA Battery 1.5V
               </text>
               <text x="72" y="158" fill="#94A3B8" fontSize="11">
-                (-) Negatif | Positif (+)
+                (-) Negative | Positive (+)
               </text>
 
               <rect
@@ -375,10 +374,10 @@ export function AdaptiveSTEMModuleAndARLab({
                 strokeWidth="2"
               />
               <text x="395" y="136" fill="#F8FAFC" fontSize="12" fontWeight="bold">
-                Kaleng Aluminium
+                Aluminum Can
               </text>
               <text x="395" y="156" fill="#38BDF8" fontSize="10">
-                Konduktor Terkupas
+                Stripped Conductor
               </text>
 
               {/* Coordinate-Anchored Animated AR Vector Paths */}
@@ -429,16 +428,17 @@ export function AdaptiveSTEMModuleAndARLab({
         <div className="mt-5 rounded-xl border border-purple-500/40 bg-purple-950/15 p-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h3 className="text-sm font-bold uppercase tracking-wider text-purple-300">
-              📊 {isMY ? 'Rumus Fizik (LaTeX), Pembolehubah & Graf Analisis (SMA / Universiti)' : 'Rumus Fisika (LaTeX), Variabel Ilmiah & Grafik Analisis (SMA / Perguruan Tinggi)'}
+              📊 Physics Formulas (LaTeX), Scientific Variables &amp; Analytical Graph (Senior High / University)
             </h3>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap items-center gap-2.5">
               {module.scientific_variables_and_graph.formulas_latex.map((latex, idx) => (
-                <code
+                <div
                   key={idx}
-                  className="rounded bg-slate-900 px-2.5 py-1 text-xs font-bold text-cyan-300 border border-slate-700"
+                  className="inline-flex items-center rounded-xl bg-slate-900/95 px-3 py-1.5 border border-cyan-500/40 shadow-sm text-cyan-200"
+                  title={`LaTeX: ${latex}`}
                 >
-                  {latex}
-                </code>
+                  <LatexRenderer formula={latex} />
+                </div>
               ))}
             </div>
           </div>
@@ -446,7 +446,7 @@ export function AdaptiveSTEMModuleAndARLab({
           <div className="mt-3 grid gap-3 md:grid-cols-3 text-xs">
             <div className="rounded-lg bg-slate-900/90 p-2.5 border border-slate-800">
               <strong className="text-cyan-300">
-                {isMY ? 'Pembolehubah Manipulasi (Bebas):' : 'Variabel Bebas (Independent):'}
+                Independent Variable (X):
               </strong>
               <p className="mt-1 text-slate-200">
                 {module.scientific_variables_and_graph.independent_variable}
@@ -454,7 +454,7 @@ export function AdaptiveSTEMModuleAndARLab({
             </div>
             <div className="rounded-lg bg-slate-900/90 p-2.5 border border-slate-800">
               <strong className="text-emerald-300">
-                {isMY ? 'Pembolehubah Bergerak Balas (Terikat):' : 'Variabel Terikat (Dependent):'}
+                Dependent Variable (Y):
               </strong>
               <p className="mt-1 text-slate-200">
                 {module.scientific_variables_and_graph.dependent_variable}
@@ -462,7 +462,7 @@ export function AdaptiveSTEMModuleAndARLab({
             </div>
             <div className="rounded-lg bg-slate-900/90 p-2.5 border border-slate-800">
               <strong className="text-amber-300">
-                {isMY ? 'Pembolehubah Dimalarkan (Kontrol):' : 'Variabel Kontrol (Controlled):'}
+                Controlled Variables:
               </strong>
               <p className="mt-1 text-slate-200">
                 {module.scientific_variables_and_graph.control_variables.join(', ')}
@@ -475,14 +475,14 @@ export function AdaptiveSTEMModuleAndARLab({
             <div className="lg:col-span-6">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-slate-200">
-                  📋 {isMY ? 'Jadual Data Pemerhatian Multi-Trial' : 'Tabel Data Pengamatan Multi-Trial'}
+                  📋 Multi-Trial Observation Data Table
                 </span>
                 <button
                   type="button"
                   onClick={handleAddTrialRow}
                   className="rounded-lg bg-purple-500/30 px-2.5 py-1 text-xs font-bold text-purple-200 hover:bg-purple-500/40"
                 >
-                  + Tambah Trial
+                  + Add Trial
                 </button>
               </div>
               <table className="mt-2 w-full text-left text-xs text-slate-200">
@@ -491,7 +491,7 @@ export function AdaptiveSTEMModuleAndARLab({
                     <th className="py-1.5">Trial</th>
                     <th className="py-1.5">{module.scientific_variables_and_graph.x_axis_label}</th>
                     <th className="py-1.5">{module.scientific_variables_and_graph.y_axis_label}</th>
-                    <th className="py-1.5">{isMY ? 'Nota' : 'Catatan'}</th>
+                    <th className="py-1.5">Notes</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800">
@@ -539,7 +539,7 @@ export function AdaptiveSTEMModuleAndARLab({
             <div className="lg:col-span-6 rounded-xl border border-slate-700 bg-slate-950 p-3">
               <div className="flex items-center justify-between text-xs">
                 <span className="font-bold text-cyan-300">
-                  📈 Grafik Regresi Linear Otomatis
+                  📈 Automated OLS Linear Regression Graph
                 </span>
                 <span className="font-mono text-emerald-300">
                   {analyticalGraph.regressionLine.equationText}
@@ -602,7 +602,7 @@ export function AdaptiveSTEMModuleAndARLab({
       {/* USP #6: Curriculum-Aligned Reflection Quiz */}
       <div className="mt-5 border-t border-slate-800 pt-4">
         <h3 className="text-sm font-bold uppercase tracking-wider text-emerald-300">
-          🧠 {isMY ? 'Soalan Diskusi & Refleksi Kurikulum (USP #6)' : 'Soal Diskusi & Refleksi Konsep STEM (USP #6)'}
+          🧠 Curriculum Discussion &amp; Reflection Questions (USP #6)
         </h3>
         <div className="mt-3 grid gap-3 md:grid-cols-2">
           {module.reflection_questions.map((q) => {
@@ -635,7 +635,7 @@ export function AdaptiveSTEMModuleAndARLab({
                 </div>
                 {chosen !== undefined && (
                   <p className="mt-2 text-slate-300">
-                    <strong>Penjelasan:</strong> {q.explanation}
+                    <strong>Explanation:</strong> {q.explanation}
                   </p>
                 )}
               </div>

@@ -120,9 +120,7 @@ export function WorkspaceScannerAndHazardBanner({
     });
     onInventoryUpdated(items, res.safety_alerts);
     setConfirmMessage(
-      isMY
-        ? `Inventori disahkan (${res.total_items} item). Sedia untuk padanan eksperimen 3-Tier!`
-        : `Inventaris fisik dikonfirmasi (${res.total_items} bahan). Siap dicocokkan ke katalog 3-Tier!`
+      `Physical inventory confirmed (${res.total_items} items). Ready for 3-Tier experiment matching!`
     );
   };
 
@@ -134,20 +132,16 @@ export function WorkspaceScannerAndHazardBanner({
             USP #1 &amp; USP #7 • VisionInventoryAgent + SafetyGuardianAgent
           </span>
           <h2 className="mt-1 text-xl font-bold text-white">
-            {isMY
-              ? '1. Pemetaan Inventori Kamera & Pengesanan Bahaya Aktif'
-              : '1. Pemetaan Inventaris Kamera & Deteksi Bahaya Ko-Lokasi Aktif'}
+            1. Camera Inventory Mapping &amp; Active Co-Location Hazard Detection
           </h2>
           <p className="text-sm text-slate-300">
-            {isMY
-              ? 'Tangkap gambar meja kerja atau barang kitar semula. Sistem mengekstrak kuantiti bahan secara automatik dan memberi amaran merah serta-merta jika bahan berbahaya berada di kawasan yang sama.'
-              : 'Foto meja kerja atau tumpukan barang bekas. Sistem otomatis mendeteksi jumlah bahan tanpa mengetik manual dan langsung memunculkan Peringatan Merah jika ada kombinasi bahan berbahaya di satu area.'}
+            Photograph your workbench or recyclable materials. The system automatically extracts item quantities and immediately triggers a Red Alert if hazardous chemical combinations are co-located in the same workspace.
           </p>
         </div>
 
         <div className="flex flex-wrap gap-2">
           <label className="cursor-pointer rounded-xl bg-cyan-500 px-4 py-2.5 text-xs font-bold text-slate-950 transition hover:bg-cyan-400">
-            📷 {isMY ? 'Ambil / Muat Naik Foto Meja' : 'Ambil / Upload Foto Meja Kerja'}
+            📷 Capture / Upload Workbench Photo
             <input
               type="file"
               accept="image/*"
@@ -163,10 +157,8 @@ export function WorkspaceScannerAndHazardBanner({
             className="rounded-xl border border-emerald-500/60 bg-emerald-500/10 px-3.5 py-2 text-xs font-semibold text-emerald-300 hover:bg-emerald-500/20"
           >
             {isScanning
-              ? 'Memindai...'
-              : isMY
-              ? '⚡ Demo Imbasan Meja Selamat'
-              : '⚡ Simulasi Scan Meja Aman'}
+              ? 'Scanning...'
+              : '⚡ Demo Safe Workbench Scan'}
           </button>
           <button
             type="button"
@@ -174,7 +166,7 @@ export function WorkspaceScannerAndHazardBanner({
             onClick={() => handleScanWorkspace(true)}
             className="rounded-xl border border-red-500/70 bg-red-500/15 px-3.5 py-2 text-xs font-semibold text-red-300 hover:bg-red-500/25"
           >
-            🚨 {isMY ? 'Uji Bahaya (Peluntur + Asid)' : 'Uji Bahaya Aktif (Pemutih + Pembersih Lantai)'}
+            🚨 Active Hazard Test (Bleach + Acid Cleaner)
           </button>
         </div>
       </div>
@@ -204,7 +196,7 @@ export function WorkspaceScannerAndHazardBanner({
               onClick={handleRemoveHazardousItems}
               className="shrink-0 rounded-lg bg-white px-4 py-2 text-xs font-bold text-red-900 shadow hover:bg-red-100"
             >
-              🛡️ {isMY ? 'Asingkan Bahan Berbahaya Sekarang' : 'Singkirkan Bahan Berbahaya dari Meja'}
+              🛡️ Isolate Hazardous Chemicals from Workspace Now
             </button>
           </div>
         </div>
@@ -215,11 +207,11 @@ export function WorkspaceScannerAndHazardBanner({
         <table className="w-full text-left text-sm text-slate-200">
           <thead className="border-b border-slate-700 text-xs uppercase text-slate-400">
             <tr>
-              <th className="py-2 pr-3">{isMY ? 'Nama Bahan (Lokal)' : 'Nama Alat / Bahan (Lokal)'}</th>
-              <th className="py-2 px-3">{isMY ? 'Kategori' : 'Kategori'}</th>
-              <th className="py-2 px-3">{isMY ? 'Kuantiti' : 'Jumlah'}</th>
+              <th className="py-2 pr-3">Material / Apparatus Name</th>
+              <th className="py-2 px-3">Category</th>
+              <th className="py-2 px-3">Quantity</th>
               <th className="py-2 px-3">AI Confidence</th>
-              <th className="py-2 pl-3 text-right">{isMY ? 'Laraskan' : 'Atur Jumlah'}</th>
+              <th className="py-2 pl-3 text-right">Adjust Quantity</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-800">
@@ -275,16 +267,14 @@ export function WorkspaceScannerAndHazardBanner({
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-slate-800 pt-3">
         <span className="text-xs text-slate-400">
           {confirmMessage ||
-            (isMY
-              ? 'Semak kuantiti bahan di atas sebelum mengesahkan inventori.'
-              : 'Periksa jumlah bahan hasil deteksi kamera sebelum mengonfirmasi inventaris.')}
+            'Review detected material quantities above before confirming physical inventory.'}
         </span>
         <button
           type="button"
           onClick={handleConfirmInventory}
           className="rounded-xl bg-emerald-500 px-4 py-2 text-xs font-bold text-slate-950 hover:bg-emerald-400"
         >
-          ✅ {isMY ? 'Sahkan Inventori Fizikal' : 'Konfirmasi Inventaris Fisik'}
+          ✅ Confirm Physical Inventory
         </button>
       </div>
     </section>

@@ -141,14 +141,10 @@ export function AcademicLabReportPDFGenerator({
             USP #10 • LabReportSynthesizerAgent (PDF) + Offline-First Gamification
           </span>
           <h2 className="mt-1 text-xl font-bold text-white">
-            {isMY
-              ? '4. Penjana Laporan Amali Rasmi (PDF) & Sinkronisasi Lencana Offline'
-              : '4. "Lab Report Generator" Otomatis (Format PDF) & Klaim Badge Offline-First'}
+            4. Automated Academic &quot;Lab Report Generator&quot; (PDF Format) &amp; Offline Badge Claims
           </h2>
           <p className="text-sm text-slate-300">
-            {isMY
-              ? 'Susun Laporan Amali lengkap (Tajuk, Tujuan, Rumus/Pembolehubah, Alat & Bahan, Jadual/Graf, Perbincangan Sains & Kesimpulan) sedia dihantar kepada guru atau pensyarah.'
-              : 'Otomatis menyusun Laporan Praktikum Resmi (Judul, Tujuan, Landasan Teori/Rumus, Alat & Bahan, Langkah Kerja, Foto/Grafik Hasil, Pembahasan Sains & Kesimpulan) siap kumpul ke guru atau dosen.'}
+            Automatically synthesize an official laboratory report (Title, Objective, Theory/Formulas, Apparatus &amp; Materials, Procedures, Results/Graphs, Scientific Discussion &amp; Conclusion) ready for teacher or lecturer submission.
           </p>
         </div>
 
@@ -160,17 +156,15 @@ export function AcademicLabReportPDFGenerator({
             className="rounded-xl bg-amber-400 px-4 py-2.5 text-xs font-bold text-slate-950 hover:bg-amber-300"
           >
             {isGenerating
-              ? 'Menyusun Laporan...'
-              : isMY
-              ? '📄 Jana Draf Laporan Amali (AI)'
-              : '📄 Susun Laporan Praktikum Otomatis (AI)'}
+              ? 'Synthesizing Report...'
+              : '📄 Synthesize Lab Report (AI)'}
           </button>
           <button
             type="button"
             onClick={handleSyncOfflineBadges}
             className="rounded-xl border border-emerald-500/60 bg-emerald-500/15 px-3.5 py-2.5 text-xs font-bold text-emerald-300 hover:bg-emerald-500/25"
           >
-            🏅 {isMY ? 'Sinkronisasi Progres & Tuntut Lencana' : 'Sinkronisasi Progres & Klaim Badge'}
+            🏅 Sync Progress &amp; Claim Badges
           </button>
         </div>
       </div>
@@ -179,7 +173,7 @@ export function AcademicLabReportPDFGenerator({
       <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4 text-xs">
         <div>
           <label className="block font-semibold text-slate-400">
-            {isMY ? 'Nama Pelajar / Mahasiswa' : 'Nama Siswa / Mahasiswa'}
+            Student Full Name
           </label>
           <input
             type="text"
@@ -190,7 +184,7 @@ export function AcademicLabReportPDFGenerator({
         </div>
         <div>
           <label className="block font-semibold text-slate-400">
-            {isMY ? 'Sekolah / Universiti' : 'Sekolah / Perguruan Tinggi'}
+            School / University Institution
           </label>
           <input
             type="text"
@@ -201,7 +195,7 @@ export function AcademicLabReportPDFGenerator({
         </div>
         <div>
           <label className="block font-semibold text-slate-400">
-            {isMY ? 'Kelas / No. Matrik' : 'Kelas / NIM'}
+            Class / Student ID
           </label>
           <input
             type="text"
@@ -212,7 +206,7 @@ export function AcademicLabReportPDFGenerator({
         </div>
         <div>
           <label className="block font-semibold text-slate-400">
-            {isMY ? 'Guru / Pensyarah Pembimbing' : 'Guru / Dosen Pembimbing'}
+            Instructor / Advisor Name
           </label>
           <input
             type="text"
@@ -229,7 +223,7 @@ export function AcademicLabReportPDFGenerator({
           <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
             <div>
               <span className="text-xs font-bold uppercase text-amber-300">
-                ✏️ Pratinjau Laporan Praktikum (Dapat Diedit Sebelum Cetak PDF)
+                ✏️ Academic Lab Report Preview (Editable Before PDF Export)
               </span>
               <p className="text-xs text-slate-400">
                 Report ID: {reportDraft.report_id} • {reportDraft.generated_at_utc}
@@ -240,13 +234,13 @@ export function AcademicLabReportPDFGenerator({
               onClick={handleExportPrintablePDF}
               className="rounded-xl bg-cyan-500 px-4 py-2 text-xs font-bold text-slate-950 hover:bg-cyan-400"
             >
-              🖨️ {isMY ? 'Muat Turun / Cetak Laporan PDF Rasmi' : 'Unduh / Cetak Laporan Praktikum PDF Resmi'}
+              🖨️ Download / Print Official PDF Lab Report
             </button>
           </div>
 
           <div className="mt-3 space-y-3 text-xs">
             <div>
-              <label className="font-bold text-slate-300">1. Tujuan Praktikum:</label>
+              <label className="font-bold text-slate-300">1. Experiment Objective:</label>
               <textarea
                 rows={2}
                 value={reportDraft.objective_local}
@@ -258,7 +252,7 @@ export function AcademicLabReportPDFGenerator({
             </div>
             <div>
               <label className="font-bold text-slate-300">
-                2. Pembahasan Analisis Sains (AI Synthesized + Editable):
+                2. Scientific Analysis Discussion (AI Synthesized + Editable):
               </label>
               <textarea
                 rows={3}
@@ -273,7 +267,7 @@ export function AcademicLabReportPDFGenerator({
               />
             </div>
             <div>
-              <label className="font-bold text-slate-300">3. Kesimpulan:</label>
+              <label className="font-bold text-slate-300">3. Conclusion:</label>
               <textarea
                 rows={2}
                 value={reportDraft.conclusion_local}
@@ -291,7 +285,7 @@ export function AcademicLabReportPDFGenerator({
       {awardedBadges.length > 0 && (
         <div className="mt-4 rounded-xl border border-emerald-500/40 bg-emerald-950/30 p-3.5">
           <div className="flex items-center justify-between text-xs font-bold text-emerald-300">
-            <span>🎉 Sinkronisasi Idempoten Berhasil (`client_mutation_id` Terverifikasi)</span>
+            <span>🎉 Idempotent Sync Successful (client_mutation_id Verified)</span>
             <span>Total XP: +{totalXp} XP</span>
           </div>
           <div className="mt-2 flex flex-wrap gap-2">

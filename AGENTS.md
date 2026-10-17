@@ -160,6 +160,17 @@ Setiap service mematuhi 4 layer Robert C. Martin dengan **Inward Dependency Rule
 ## Journal of Notable Architectural Decisions
 
 <!-- Append notable entries newest on top -->
+- **[2026-10-17 12:45] [MULTI-AGENT BROADCAST — SESSION `12-36` COMPLETED]** Implemented mathematical LaTeX rendering subsystem with KaTeX across `apps/web`:
+  - Resolved raw unformatted LaTeX formula display across Senior High / University STEM modules ($I = \frac{V}{R}$, $V_{\text{terminal}} = \mathcal{E} - I \cdot r_{\text{int}}$, etc.).
+  - Added `apps/web/src/components/LatexRenderer.tsx` with delimiter sanitization (`\(..\)`, `\[..\]`, `$$..$$`, `$..$`), double-backslash normalization, and resilient fallback to italicized serif on parse error.
+  - Exported `LatexText` component for parsing mixed prose with embedded LaTeX delimiters in STEM concepts.
+  - Updated printable academic PDF lab report builder in `ar-and-pdf-engine.ts` to include KaTeX stylesheet and render formulas to HTML/MathML in Theory & Variables section.
+  - Added automated test in `apps/web/tests/web-engine.test.mjs` and verified 56/56 monorepo tests pass (100% green).
+- **[2026-10-17 12:43] [MULTI-AGENT BROADCAST — SESSION `12-33` COMPLETED]** Localized full user interface to English across `apps/web`:
+  - Translated all navigation, headers, forms, inputs, tooltips, hazard alert banners, step guidance instructions, and observation tables in `apps/web/src/` to fluent English while keeping curriculum standards (Kurikulum Merdeka & KSSR/KSSM) and dual-country currencies (Rp & RM) intact.
+  - Implemented and integrated `LatexRenderer.tsx` with KaTeX formula sanitization and MathML accessibility for High School and University STEM formulas.
+  - Translated offline fallback report text and printable PDF HTML report document templates in `ar-and-pdf-engine.ts`.
+  - Validated with `npm run typecheck` (0 errors), `npm run build` (Next.js 14 production build PASS), and `make test` (48/48 tests PASS — 100% Green).
 - **[2026-10-17 12:30] [MULTI-AGENT BROADCAST — SESSION `12-30` COMPLETED]** Optimized Docker Layer Caching and Build Context for `apps/web`:
   - Created root `.dockerignore` excluding host `node_modules`, `.next`, `.git`, `.venv`, and `.Artifacts` from build contexts.
   - Refactored `apps/web/Dockerfile` to copy only `package.json` manifests first, cache `RUN npm install`, and only then copy application source code.

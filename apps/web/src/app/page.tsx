@@ -39,9 +39,9 @@ export default function RekaSainsHomePage() {
   const [activeModule, setActiveModule] = useState<STEMExperimentModuleDTO | null>(null);
   const [verifiedSteps, setVerifiedSteps] = useState<number[]>([]);
   const [observationRows, setObservationRows] = useState<ObservationDataRowDTO[]>([
-    { trial_number: 1, x_value: 1.5, y_value: 120, notes: '1 Baterai AA (1.5V) — Nyala Redup' },
-    { trial_number: 2, x_value: 3.0, y_value: 242, notes: '2 Baterai Seri (3.0V) — Nyala Terang' },
-    { trial_number: 3, x_value: 4.5, y_value: 360, notes: '3 Baterai Seri (4.5V) — Nyala Sangat Terang' },
+    { trial_number: 1, x_value: 1.5, y_value: 120, notes: '1 AA Battery (1.5V) — Dim Glow' },
+    { trial_number: 2, x_value: 3.0, y_value: 242, notes: '2 Batteries in Series (3.0V) — Bright Glow' },
+    { trial_number: 3, x_value: 4.5, y_value: 360, notes: '3 Batteries in Series (4.5V) — Very Bright Glow' },
   ]);
 
   const curriculumCode: CurriculumCodeEnum =
@@ -180,7 +180,7 @@ export default function RekaSainsHomePage() {
               </span>
             </div>
             <h1 className="mt-2 text-2xl font-extrabold tracking-tight text-white sm:text-3xl">
-              RekaSains — Merekayasa Sains dari Sekitar
+              RekaSains — Engineering Science from Household Resources
             </h1>
             <p className="mt-1 text-sm text-slate-300">
               AI-Native STEM Lab, Physical-to-Digital Inventory Mapping, Interactive Vision/AR Step Guidance &amp; Automated Academic Lab Report PDF Generator
@@ -218,7 +218,7 @@ export default function RekaSainsHomePage() {
               }
               className="rounded-xl border border-slate-700 bg-slate-800 px-3 py-2 text-xs font-semibold text-slate-200 hover:bg-slate-700"
             >
-              👤 Peran: {userRole === 'STUDENT' ? 'Siswa / Mahasiswa' : 'Guru / Dosen'}
+              👤 Role: {userRole === 'STUDENT' ? 'Student / University' : 'Teacher / Lecturer'}
             </button>
             <button
               type="button"
@@ -229,7 +229,7 @@ export default function RekaSainsHomePage() {
                   : 'border border-emerald-500/50 bg-emerald-500/15 text-emerald-300'
               }`}
             >
-              {isOfflineMode ? '📡 Mode Offline (IndexedDB)' : '🌐 Mode Online (ADK Live)'}
+              {isOfflineMode ? '📡 Offline Mode (IndexedDB)' : '🌐 Online Mode (ADK Live)'}
             </button>
           </div>
         </div>
