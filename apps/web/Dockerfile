@@ -13,6 +13,12 @@ RUN npm install --legacy-peer-deps
 
 RUN mkdir -p node_modules/@rekasains && cp -r /workspace/packages/shared-types node_modules/@rekasains/shared-types && cp -r /workspace/packages/shared-core node_modules/@rekasains/shared-core
 
+# Rewrite targets are baked in at build time; defaults match the docker-compose service names.
+ARG CORE_API_INTERNAL_URL=http://core-api:8080
+ARG AI_AGENT_INTERNAL_URL=http://ai-agent:8081
+ENV CORE_API_INTERNAL_URL=$CORE_API_INTERNAL_URL
+ENV AI_AGENT_INTERNAL_URL=$AI_AGENT_INTERNAL_URL
+
 RUN npm run build
 
 FROM node:22-alpine AS runner

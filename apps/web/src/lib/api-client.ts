@@ -39,12 +39,12 @@ import {
 
 import { recordAgentCall, type AgentName } from './agent-trace';
 
-export const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/v1';
+// Same-origin paths: Caddy (deploy) or Next rewrites (dev) route them to core-api and ai-agent,
+// so the browser never needs to know internal hosts or ports.
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '/v1';
 
-/** ai-agent service (FastAPI), reached through Caddy at /ai/v1 in docker compose. */
-export const AI_BASE_URL =
-  process.env.NEXT_PUBLIC_AI_URL || 'http://localhost:8081/ai/v1';
+/** ai-agent service (FastAPI). */
+export const AI_BASE_URL = process.env.NEXT_PUBLIC_AI_URL || '/ai/v1';
 
 interface RequestOptions<T> {
   baseUrl?: string;
