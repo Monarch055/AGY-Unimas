@@ -7,6 +7,7 @@ import type {
   ChatSessionDTO,
   CurriculumCodeEnum,
   RegionCode,
+  SupportedImageMimeType,
 } from '@rekasains/shared-types';
 import { streamChatWithSTEMTutor } from '../lib/api-client';
 import {
@@ -33,7 +34,7 @@ export function ChatSTEMAssistant({
   const [messages, setMessages] = useState<ChatMessageDTO[]>([]);
   const [inputPrompt, setInputPrompt] = useState<string>('');
   const [imageBase64, setImageBase64] = useState<string | null>(null);
-  const [imageMimeType, setImageMimeType] = useState<string | null>(null);
+  const [imageMimeType, setImageMimeType] = useState<SupportedImageMimeType | null>(null);
   const [isStreaming, setIsStreaming] = useState<boolean>(false);
   const [streamingBuffer, setStreamingBuffer] = useState<string>('');
   const [sessionsList, setSessionsList] = useState<ChatSessionDTO[]>([]);
@@ -88,7 +89,10 @@ export function ChatSTEMAssistant({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    setImageMimeType(file.type || 'image/jpeg');
+    const rawType = file.type;
+    const safeType: SupportedImageMimeType =
+      rawType === 'image/webp' || rawType === 'image/png' ? rawType : 'image/jpeg';
+    setImageMimeType(safeType);
     const reader = new FileReader();
     reader.onload = () => {
       if (typeof reader.result === 'string') {
