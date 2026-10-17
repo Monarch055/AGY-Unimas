@@ -1,0 +1,15 @@
+{
+  "name": "rekasains-monorepo",
+  "version": "1.1.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "test": "node --test packages/shared-types/tests/shared-types.test.mjs packages/shared-core/tests/shared-core.test.mjs apps/web/tests/web-engine.test.mjs apps/web/tests/web-offline-and-graph.test.mjs apps/web/tests/e2e-workflow.test.mjs tests/e2e_full_workflow.test.mjs tests/contract-conformance.test.mjs",
+    "test:ai": "python -m unittest discover -s services/ai-agent/tests -v",
+    "build:web": "npm --workspace=@rekasains/web run build"
+  }
+}

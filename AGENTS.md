@@ -160,6 +160,14 @@ Setiap service mematuhi 4 layer Robert C. Martin dengan **Inward Dependency Rule
 ## Journal of Notable Architectural Decisions
 
 <!-- Append notable entries newest on top -->
+- **[2026-10-17 12:25] [MULTI-AGENT BROADCAST — SESSION `12-25` COMPLETED]** Productionized and orchestrated full-stack multi-container Docker deployment:
+  - Established Root `package.json` with npm workspaces (`"packages/*"`, `"apps/*"`) resolving inter-package dependencies (`@rekasains/shared-*`) cleanly across container builds.
+  - Hardened multi-stage `apps/web/Dockerfile` with standalone Next.js 14+ output and lightweight Alpine runner.
+  - Hardened `services/core-api/Dockerfile` with multi-stage Go 1.23+ Alpine compilation, unprivileged `appuser` (UID 10001), healthcheck against `/v1/health`, and automated SQL migrations inclusion.
+  - Hardened `services/ai-agent/Dockerfile` with Python 3.12-slim, non-root `appuser`, `curl` healthcheck against `/health`, and port 8081 exposure.
+  - Reordered `deployments/proxy/Caddyfile` reverse proxy routes so `/healthz` is intercepted cleanly before the wildcard catch-all `/*` to `web:3000`.
+  - Validated full-stack orchestration via `docker compose config` (Zero-RabbitMQ directive intact, PostgreSQL 16 Alpine, Valkey 7.2 Alpine, Core-API, AI-Agent, Web, Caddy reverse proxy on port 80).
+
 - **[2026-10-17 12:07] [MULTI-AGENT BROADCAST — SESSION `12-07` COMPLETED]** Executed full-spectrum testing across all 10 USPs and achieved 100% test pass rate across the monorepo:
   - Implemented comprehensive End-to-End System Integration Suite `tests/e2e_full_workflow.test.mjs` (7 multi-tier scenarios covering physical-to-digital inventory scanning, 100% active co-location hazard recall, 3-tier matching with functional DIY physics/chemistry substitutes, integer currency formatting for IDR/MYR_SEN, 4-level age-adaptive scaffolding with LaTeX, step vision verification with AR coordinate projection, and academic lab report PDF synthesis with OLS linear regression).
   - Resolved edge-case classifications in `services/ai-agent/app/agents/adk_orchestrator.py` (DIY tier substitute ownership check, Malay lab report discussion localization) and `catalog_knowledge.py` (Ohm's Law formula for Higher Ed tier).
