@@ -54,3 +54,9 @@ temp/
 
 # Archives
 *.zip
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/

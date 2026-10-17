@@ -47,7 +47,7 @@ func (g *HybridADKGateway) ExtractInventoryFromImage(
 	var remoteResp struct {
 		DetectedItems []domain.InventoryItemDTO `json:"detected_items"`
 	}
-	if err := g.postJSON(ctx, "/vision/inventory-scan", reqBody, &remoteResp); err == nil && len(remoteResp.DetectedItems) > 0 {
+	if err := g.postJSON(ctx, "/vision/scan", reqBody, &remoteResp); err == nil && len(remoteResp.DetectedItems) > 0 {
 		return remoteResp.DetectedItems, nil
 	}
 
@@ -125,7 +125,7 @@ func (g *HybridADKGateway) VerifyExperimentStepVision(
 		"age_adaptive_level":         level,
 	}
 	var remoteResp domain.StepVisionVerifyResponse
-	if err := g.postJSON(ctx, "/vision/step-verify", reqBody, &remoteResp); err == nil && remoteResp.StepNumber > 0 {
+	if err := g.postJSON(ctx, "/vision/verify-step", reqBody, &remoteResp); err == nil && remoteResp.StepNumber > 0 {
 		return remoteResp, nil
 	}
 

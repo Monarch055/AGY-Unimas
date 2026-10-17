@@ -4,17 +4,17 @@ import (
 	"context"
 	"testing"
 
-	"github.com/rekasains/core-api/internal/delivery/amqp"
+	"github.com/rekasains/core-api/internal/delivery/events"
 	"github.com/rekasains/core-api/internal/domain"
 	"github.com/rekasains/core-api/internal/gateway"
 	"github.com/rekasains/core-api/internal/repository"
 	"github.com/rekasains/core-api/internal/usecase"
 )
 
-func setupTestUseCase() (*usecase.RekaSainsControlPlaneUseCase, *amqp.StructuredEventPublisher) {
+func setupTestUseCase() (*usecase.RekaSainsControlPlaneUseCase, *events.InternalSSEEventEmitter) {
 	store := repository.NewSeededStore()
 	adkGw := gateway.NewHybridADKGateway("http://127.0.0.1:59999/ai/v1") // unreachable port triggers deterministic fallback
-	pub := amqp.NewStructuredEventPublisher(nil)
+	pub := events.NewInternalSSEEventEmitter(nil)
 	uc := usecase.NewRekaSainsControlPlaneUseCase(store, store, store, adkGw, pub)
 	return uc, pub
 }

@@ -10,7 +10,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/rekasains/core-api/internal/delivery/amqp"
+	"github.com/rekasains/core-api/internal/delivery/events"
 	httpdelivery "github.com/rekasains/core-api/internal/delivery/http"
 	"github.com/rekasains/core-api/internal/gateway"
 	"github.com/rekasains/core-api/internal/repository"
@@ -32,10 +32,10 @@ func main() {
 		aiAgentBaseURL = "http://localhost:8081/ai/v1"
 	}
 
-	// Layer 3 & 4 Wiring (Dependency Injection)
+	// Layer 3 & 4 Wiring (Dependency Injection — Zero RabbitMQ)
 	seededStore := repository.NewSeededStore()
 	adkGateway := gateway.NewHybridADKGateway(aiAgentBaseURL)
-	eventPub := amqp.NewStructuredEventPublisher(logger)
+	eventPub := events.NewInternalSSEEventEmitter(logger)
 
 	controlPlaneUC := usecase.NewRekaSainsControlPlaneUseCase(
 		seededStore,
