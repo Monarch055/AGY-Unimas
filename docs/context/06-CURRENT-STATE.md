@@ -14,7 +14,7 @@
 | **Sub-Part 1** | `packages/shared-types`, `packages/shared-core` | TypeScript DTOs (`openapi.yaml`), AR Coordinate Validator `[0.0, 1.0]`, Integer Currency Formatter (`IDR`/`MYR_SEN`) | 🟢 **COMPLETED** | Session `2026-10-17/11-35` | `2026-10-17 11:47` |
 | **Sub-Part 2** | `services/core-api` | Phase 1: Go 4-Layer Control Plane (Zero-RabbitMQ Direct REST/SSE), SQL Migrations `001`–`003` (Seed ID/MY), 3-Tier Set-Matcher, Functional Substitutes, Active Co-Location Hazard Matrix, Step Verify & Lab Report API | 🟢 **COMPLETED** | Session `2026-10-17/11-35` | `2026-10-17 11:47` |
 | **Sub-Part 3** | `services/ai-agent` | Phase 2: Python 3.12+ FastAPI + 6-Sub-Agent Google ADK (`VisionInventory`, `ResourceMatcher`, `CurriculumScaffolder`, `SafetyGuardian`, `StepVisionAndAR`, `LabReportSynthesizer`) | 🟢 **COMPLETED** | Sessions `11-40` & `11-47` | `2026-10-17 11:52` |
-| **Sub-Part 4** | `apps/web` | Phase 3: Next.js Mobile-First PWA, English UI Localization, KaTeX Math Rendering, Camera Scanner, Active Hazard Banner, HTML5 Canvas/SVG AR Overlay, 4-Level Graph Plotter, IndexedDB Offline Lab Pack & Editable PDF Lab Report Exporter | 🟢 **COMPLETED** | Sessions `11-38`, `12-33` | `2026-10-17 12:43` |
+| **Sub-Part 4** | `apps/web` | Phase 3: Next.js Mobile-First PWA, English UI Localization, KaTeX Math Rendering, Camera Scanner, Active Hazard Banner, HTML5 Canvas/SVG AR Overlay, 4-Level Graph Plotter, IndexedDB Offline Lab Pack & Editable PDF Lab Report Exporter | 🟢 **COMPLETED** | Sessions `11-38`, `12-33`, `12-36` | `2026-10-17 12:45` |
 | **Sub-Part 5** | `deployments/`, `Makefile`, `Taskfile.yml`, `package.json`, Dockerfiles | Full-Stack Docker Compose (profiles `infra` & `full`), Multi-Stage Container Dockerfiles (`web`, `core-api`, `ai-agent`), Caddy Reverse Proxy, IaC Terraform, Makefile & Taskfile orchestration | 🟢 **COMPLETED** | Sessions `12-00`, `12-25` | `2026-10-17 12:25` |
 
 ---
@@ -31,11 +31,11 @@
 | `services/core-api` | Inventory, 3-Tier Matcher, Functional Substitutes & Active Hazard Rules (Go) | 🟢 Production | Unit Tested (`rekasains_usecases_test.go`) | `docs/features/FEAT-001-*.md` |
 | `services/core-api` | Step Verification Log, 4-Level Adaptive Data & Academic Lab Report PDF API | 🟢 Production | Unit Tested (`rekasains_usecases_test.go`) | `docs/features/FEAT-002-*.md` |
 | `services/ai-agent` | Google ADK 6-Agent Engine (`Vision`, `Matcher`, `Curriculum`, `Safety`, `StepVisionAndAR`, `LabReport`) | 🟢 Production | 14 Tests PASS (`unittest discover`) | `FEAT-001` & `FEAT-002` |
-| `apps/web` | Mobile-First PWA Scanner, AR Canvas Overlay, 4-Level Graph & PDF Lab Report | 🟢 Production | 14 Tests PASS (`web-engine`, `offline-and-graph`, `e2e`) | `FEAT-001` & `FEAT-002` |
+| `apps/web` | Mobile-First PWA Scanner, AR Canvas Overlay, 4-Level Graph & PDF Lab Report | 🟢 Production | 22 Tests PASS (`web-engine`, `offline-and-graph`) | `FEAT-001` & `FEAT-002` |
 | `monorepo-e2e` | End-to-End 10 USPs Workflow & Contract Conformance | 🟢 Production | 11 Tests PASS (`e2e_full_workflow`, `contract-conformance`) | `contracts/api/openapi.yaml` |
 | `deployments` | Docker Compose Full Stack (Infra + App Containers), Caddy Reverse Proxy & Terraform IaC | 🟢 Production | Manual Verified | `docker-compose.yml` |
 
-*Total Monorepo Automated Tests: 48/48 PASS (100% Green)*
+*Total Monorepo Automated Tests: 56/56 PASS (100% Green)*
 *Legend: 🟢 Production Ready | 🔄 In-Progress (Locked by Active Agent) | 🟡 Specified / Ready to Claim | 🔴 Blocked*
 
 ---
