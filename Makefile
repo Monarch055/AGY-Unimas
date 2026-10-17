@@ -24,11 +24,16 @@ build:
 
 test:
 	@echo "==> Running shared packages test..."
+	node --test packages/shared-types/tests/shared-types.test.mjs
 	node --test packages/shared-core/tests/shared-core.test.mjs
 	@echo "==> Running web frontend test..."
 	node --test apps/web/tests/web-engine.test.mjs
+	node --test apps/web/tests/e2e-workflow.test.mjs
+	@echo "==> Running End-to-End full workflow test (10 USPs)..."
+	node --test tests/e2e_full_workflow.test.mjs
 	@echo "==> Running AI Agent engine test..."
-	cd services/ai-agent && python -m unittest discover -s tests -v
+	python -m unittest services/ai-agent/tests/test_ai_agent.py
+	@echo "All monorepo test suites passed successfully!"
 
 lint:
 	@echo "==> Checking TypeScript and Python syntax..."

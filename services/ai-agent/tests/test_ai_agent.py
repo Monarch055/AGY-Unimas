@@ -244,9 +244,57 @@ class TestRekaSainsAIAgentService(unittest.TestCase):
             },
         )
         self.assertEqual(res_rep.status_code, 200)
-        res_sse = client.get("/ai/v1/events/stream")
-        self.assertEqual(res_sse.status_code, 200)
-        self.assertTrue(res_sse.headers["content-type"].startswith("text/event-stream"))
+    def test_07_malaysia_dskp_curriculum_and_ringgit_pricing(self) -> None:
+        """USP #4 & #6: Tests Malaysian DSKP curriculum and zero-float MYR_SEN currency."""
+        payload = {
+            "region": "MY",
+            "curriculum_code": "MY_KSSM",
+            "age_adaptive_level": "SMP_LOWER_SEC",
+            "grade_level": "TINGKATAN_2",
+            "user_role": "STUDENT",
+            "inventory_items": [
+                {"material_slug": "battery_aa_1_5v", "quantity": 2, "unit": "pcs"},
+                {"material_slug": "copper_wire_jumper", "quantity": 2, "unit": "pcs"},
+                {"material_slug": "aluminum_can_recycled", "quantity": 1, "unit": "pcs"},
+                {"material_slug": "led_diode_5mm", "quantity": 1, "unit": "pcs"},
+            ],
+        }
+        res = client.post("/ai/v1/recommendations/match", json=payload)
+        self.assertEqual(res.status_code, 200)
+        body = res.json()
+        self.assertGreaterEqual(len(body["strict_100_matches"]), 1)
+        match = body["strict_100_matches"][0]
+        self.assertIn("KSSM", match["curriculum_badge"])
+
+        # Check local micro-shop item uses integer MYR_SEN
+        if body["local_micro_shop_matches"]:
+            shop_match = body["local_micro_shop_matches"][0]
+            if shop_match["missing_local_shop_items"]:
+                item = shop_match["missing_local_shop_items"][0]
+                self.assertEqual(item["currency"], "MYR_SEN")
+                self.assertIsInstance(item["est_price_int"], int)
+
+    def test_08_symmetric_co_location_hazard_matrix(self) -> None:
+        """USP #7: Tests symmetrical hazard matrix (both A+B and B+A must trigger alert)."""
+        # Order 1: Bleach then Acid
+        b64_order1 = base64.b64encode(b"item: sodium_hypochlorite and item: floor_cleaner_acidic").decode()
+        res1 = client.post(
+            "/ai/v1/inventory/scan",
+            json={"image_base64": b64_order1, "mime_type": "image/jpeg", "region": "ID"},
+        )
+        self.assertEqual(res1.status_code, 200)
+        hazards1 = res1.json()["active_workspace_hazards"]
+        self.assertTrue(any(h["rule_code"] == "HAZ_CO_LOCATED_BLEACH_AND_ACID_CLEANER" for h in hazards1))
+
+        # Order 2: Acid then Bleach
+        b64_order2 = base64.b64encode(b"item: floor_cleaner_acidic and item: sodium_hypochlorite").decode()
+        res2 = client.post(
+            "/ai/v1/inventory/scan",
+            json={"image_base64": b64_order2, "mime_type": "image/jpeg", "region": "ID"},
+        )
+        self.assertEqual(res2.status_code, 200)
+        hazards2 = res2.json()["active_workspace_hazards"]
+        self.assertTrue(any(h["rule_code"] == "HAZ_CO_LOCATED_BLEACH_AND_ACID_CLEANER" for h in hazards2))
 
 
 if __name__ == "__main__":

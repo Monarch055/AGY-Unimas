@@ -19,9 +19,12 @@ tasks:
   test:
     desc: Run tests across monorepo
     cmds:
+      - node --test packages/shared-types/tests/shared-types.test.mjs
       - node --test packages/shared-core/tests/shared-core.test.mjs
       - node --test apps/web/tests/web-engine.test.mjs
-      - powershell -Command "cd services/ai-agent; python -m unittest discover -s tests -v"
+      - node --test apps/web/tests/e2e-workflow.test.mjs
+      - node --test tests/e2e_full_workflow.test.mjs
+      - python -m unittest services/ai-agent/tests/test_ai_agent.py
 
   infra:up:
     desc: Start local infrastructure containers (Postgres & Redis)

@@ -320,7 +320,7 @@ class ResourceMatcherAgent:
                         missing_local_shop_items=[],
                     )
                 )
-            elif len(missing_shop_items) == 0 and len(functional_subs_used) > 0:
+            elif len(functional_subs_used) > 0:
                 pct = int(round(((satisfied_direct + 0.85 * len(functional_subs_used)) / total_reqs) * 100))
                 diy_sub.append(
                     ExperimentRecommendationCardDTO(
@@ -332,7 +332,7 @@ class ResourceMatcherAgent:
                         curriculum_badge=badge,
                         safety_severity="SAFE" if exp.safety_severity == "SAFE" else "ADULT_SUPERVISION",
                         functional_substitutes=functional_subs_used,
-                        missing_local_shop_items=[],
+                        missing_local_shop_items=missing_shop_items,
                     )
                 )
             elif len(missing_shop_items) <= 2:
@@ -626,14 +626,14 @@ class LabReportSynthesizerAgent:
             min_y, max_y = min(y_vals), max(y_vals)
             if is_id:
                 data_insight = (
-                    f"Berdasarkan {len(rows)} percobaan (multi-trial) yang dilakukan oleh {req.student_name} "
+                    f"Hasil pengamatan: Berdasarkan {len(rows)} percobaan (multi-trial) yang dilakukan oleh {req.student_name} "
                     f"({req.institution_name} - {req.class_or_nim}), diperoleh rata-rata variabel input X = {mean_x:.2f} "
                     f"dan rata-rata respons terukur Y = {mean_y:.2f} (rentang {min_y:.2f} hingga {max_y:.2f}). "
                     f"Tren data pengamatan menunjukkan kesesuaian dengan model teoritis ({stem.science})."
                 )
             else:
                 data_insight = (
-                    f"Berdasarkan {len(rows)} percubaan makmal oleh {req.student_name} "
+                    f"Hasil pemerhatian: Berdasarkan {len(rows)} percubaan makmal oleh {req.student_name} "
                     f"({req.institution_name} - {req.class_or_nim}), purata nilai input X = {mean_x:.2f} "
                     f"dan purata nilai gerak balas Y = {mean_y:.2f} (julat {min_y:.2f} hingga {max_y:.2f}). "
                     f"Corak data selaras dengan prinsip saintifik ({stem.science})."

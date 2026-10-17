@@ -556,6 +556,7 @@ EXPERIMENT_BLUEPRINTS: Dict[str, ExperimentBlueprintSpec] = {
             ),
             AgeAdaptiveLevelEnum.HIGHER_ED_UNI: ScientificVariablesAndGraphSchemaDTO(
                 formulas_latex=[
+                    r"I = \frac{V}{R}",
                     r"V_{\text{terminal}} = \mathcal{E} - I \cdot r_{\text{int}}",
                     r"R_{\text{konduktor}} = \rho \frac{L}{A}",
                     r"I_D = I_S \left( e^{\frac{q V_D}{n k_B T}} - 1 \right)",
@@ -594,6 +595,7 @@ EXPERIMENT_BLUEPRINTS: Dict[str, ExperimentBlueprintSpec] = {
             ),
             AgeAdaptiveLevelEnum.HIGHER_ED_UNI: ScientificVariablesAndGraphSchemaDTO(
                 formulas_latex=[
+                    r"I = \frac{V}{R}",
                     r"V_{\text{terminal}} = \mathcal{E} - I \cdot r_{\text{dalam}}",
                     r"R_{\text{konduktor}} = \rho \frac{L}{A}",
                     r"I_D = I_S \left( e^{\frac{q V_D}{n k_B T}} - 1 \right)",
