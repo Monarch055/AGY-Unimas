@@ -1,0 +1,27 @@
+{
+    # Global options
+    auto_https off
+}
+
+# Ingress Router for RekaSains
+:80 {
+    # Core Control Plane API forwarding
+    handle /v1/* {
+        reverse_proxy core-api:8080
+    }
+
+    # Google ADK AI Agent API forwarding
+    handle /ai/v1/* {
+        reverse_proxy ai-agent:8081
+    }
+
+    # Frontend Mobile-First PWA forwarding
+    handle /* {
+        reverse_proxy web:3000
+    }
+
+    # Health check
+    handle /healthz {
+        respond "OK" 200
+    }
+}

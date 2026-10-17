@@ -1,0 +1,70 @@
+# ==============================================================================
+# .aiignore — RekaSains Monorepo AI Context Exclusion Rules
+# Files and folders matching these rules are excluded from AI model scanning.
+# ==============================================================================
+
+# --- Version Control & IDE Metadata ---
+.git/
+.github/
+.vscode/
+.idea/
+.v3code/
+.context-bridge/
+
+# --- Dependencies & Package Managers ---
+node_modules/
+.bun/
+.pnpm-store/
+.npm/
+.yarn/
+vendor/
+__pycache__/
+*.pyc
+.venv/
+env/
+
+# --- Build Outputs & Compilation Artifacts ---
+dist/
+build/
+output/
+target/
+bin/
+*.exe
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+.turbo/
+.next/
+.astro/
+.cache/
+
+# --- Secrets, Credentials & Key Material ---
+*.pem
+*.key
+*.crt
+*.pfx
+host_key*
+id_rsa*
+id_ed25519*
+.env
+.env.*
+!.env.example
+*.secret
+*.keystore
+
+# --- Logs & Runtime State ---
+logs/
+*.log
+*.sqlite
+*.sqlite3
+*.db
+tmp/
+temp/
+
+# --- Infrastructure State ---
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl

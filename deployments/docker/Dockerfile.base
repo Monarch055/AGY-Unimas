@@ -1,0 +1,16 @@
+# Base Dockerfile for RekaSains services
+# Multi-stage build template
+
+# Stage 1: Build stage
+FROM alpine:3.19 AS base
+WORKDIR /app
+RUN apk add --no-cache ca-certificates tzdata
+
+# Stage 2: Runtime stage
+FROM alpine:3.19 AS runner
+WORKDIR /app
+COPY --from=base /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+COPY --from=base /usr/share/zoneinfo /usr/share/zoneinfo
+
+USER 10001:10001
+CMD ["./server"]

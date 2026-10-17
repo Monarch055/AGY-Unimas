@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rekasains-ai-agent"
+version = "1.1.0"
+description = "RekaSains 6-Sub-Agent Google ADK Engine (Vision, 3-Tier Matcher, 4-Level Curriculum Scaffolder, Active Co-Location Safety Guardian, Step Vision & AR Overlay, Academic Lab Report Synthesizer)"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.110.0",
+    "uvicorn>=0.29.0",
+    "pydantic>=2.6.0",
+    "httpx>=0.27.0",
+]

@@ -1,0 +1,814 @@
+openapi: 3.0.3
+info:
+  title: RekaSains API
+  description: >
+    Canonical REST API Specifications for **RekaSains** — AI-Native STEM Lab,
+    Physical-to-Digital Inventory Mapping, Interactive Vision/AR Step Guidance,
+    and Academic PDF Lab Report Generator Platform for Indonesia (Kurikulum Merdeka & DIKTI)
+    and Malaysia (KSSR/KSSM & Universiti) powered by Go (`services/core-api`) and
+    Python 6-Sub-Agent Google ADK (`services/ai-agent`).
+  version: 1.1.0
+servers:
+  - url: http://localhost:8080/v1
+    description: Core Control Plane API (`services/core-api`)
+  - url: http://localhost:8081/ai/v1
+    description: Internal Google ADK 6-Agent Service (`services/ai-agent`)
+
+paths:
+  /health:
+    get:
+      summary: Health check endpoint
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status, service, timestamp]
+                properties:
+                  status:
+                    type: string
+                    example: ok
+                  service:
+                    type: string
+                    example: rekasains-core-api
+                  timestamp:
+                    type: string
+                    format: date-time
+
+  /inventory/scan:
+    post:
+      summary: Scan workspace photo to extract inventory & detect active co-location hazards (USP #1 & #7)
+      description: >
+        Passes a compressed workspace image to `VisionInventoryAgent` + `SafetyGuardianAgent` (Google ADK)
+        to automatically detect items, count quantities, map to Indonesia (`ID`) or Malaysia (`MY`)
+        local taxonomy, and immediately trigger red alerts if hazardous materials (e.g., acidic floor cleaner
+        and bleach) are co-located in the same frame before any experiment begins.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InventoryScanRequest'
+      responses:
+        '200':
+          description: Extracted draft inventory items + active co-location hazard alerts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryScanResponse'
+
+  /inventory/items:
+    get:
+      summary: Get user's confirmed physical inventory items
+      parameters:
+        - in: query
+          name: region
+          schema:
+            type: string
+            enum: [ID, MY]
+            default: ID
+      responses:
+        '200':
+          description: Current user inventory list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/InventoryItemDTO'
+    put:
+      summary: Confirm or update user's physical inventory items after scan review
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [region, items]
+              properties:
+                region:
+                  type: string
+                  enum: [ID, MY]
+                items:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/InventoryItemInput'
+      responses:
+        '200':
+          description: Updated inventory items and active safety alerts
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: confirmed
+                  total_items:
+                    type: integer
+                    example: 6
+                  safety_alerts:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SafetyAlertDTO'
+
+  /recommendations/match:
+    post:
+      summary: Match inventory to 3-Tier, Functional Substitute & 4-Level Age-Adaptive STEM Experiments (USP #2, #3, #4, #5)
+      description: >
+        Matches the user's confirmed inventory against the curated catalog & Google ADK
+        `ResourceMatcherAgent` + `SafetyGuardianAgent` returning 3 tiers:
+        1. `STRICT_100` (100% materials available),
+        2. `DIY_SUBSTITUTE` (Functional Physics/Chemistry Material Substitute or DIY craft, e.g., PVC pipe -> thick straw/cardboard roll),
+        3. `LOCAL_MICRO_SHOP` (missing 1-2 cheap local items with ID/MY store & Rp/RM price guide).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecommendationMatchRequest'
+      responses:
+        '200':
+          description: 3-Tier experiment recommendations aligned with age level & curriculum
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecommendationMatchResponse'
+
+  /experiments/{slug}/scaffold:
+    post:
+      summary: Generate 4-Level Age-Adaptive STEM Module & Offline Lab Pack (USP #5, #6, #9)
+      description: >
+        Uses `CurriculumScaffolderAgent` + `SafetyGuardianAgent` to tailor the experiment to
+        `SD_ELEMENTARY` (visual storytelling), `SMP_LOWER_SEC`, `SMA_UPPER_SEC`, or `HIGHER_ED_UNI`
+        (LaTeX equations, Independent/Dependent/Control Variables, Observation Tables, and Analytical Graph schemas).
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [region, curriculum_code, age_adaptive_level, grade_level, user_role]
+              properties:
+                region:
+                  type: string
+                  enum: [ID, MY]
+                curriculum_code:
+                  type: string
+                  enum: [ID_KURIKULUM_MERDEKA, ID_DIKTI_HIGHER_ED, MY_KSSR, MY_KSSM, MY_MATRIKULASI_UNI]
+                age_adaptive_level:
+                  $ref: '#/components/schemas/AgeAdaptiveLevelEnum'
+                grade_level:
+                  type: string
+                  example: "SMA_FASE_F"
+                user_role:
+                  type: string
+                  enum: [STUDENT, TEACHER]
+      responses:
+        '200':
+          description: Complete Offline-Ready STEM Experiment Module
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/STEMExperimentModuleDTO'
+        '422':
+          description: Blocked by SafetyGuardianAgent due to hazardous material combination
+
+  /experiments/{slug}/steps/{step_number}/verify-vision:
+    post:
+      summary: Verify experiment step execution via AI Vision & extract AR Overlay coordinates (USP #8 & #9)
+      description: >
+        Invokes `StepVisionAndARAgent` (Google ADK) to verify whether the user's physical assembly photo
+        correctly fulfills the current step instruction (e.g., "Red wire connected to positive battery terminal")
+        and returns normalized anchor coordinates `(x_norm, y_norm)` to render interactive HTML5 Canvas/SVG
+        AR simulation overlays (electron flow arrows, force vectors, fluid pressure) over the real object.
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: step_number
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StepVisionVerifyRequest'
+      responses:
+        '200':
+          description: Step verification result, corrective feedback, and AR overlay vector anchors
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StepVisionVerifyResponse'
+
+  /experiments/{slug}/lab-report/generate:
+    post:
+      summary: Synthesize automated Academic Lab Report (Editable Draft & PDF Export) (USP #10)
+      description: >
+        Invokes `LabReportSynthesizerAgent` (Google ADK) to analyze the user's final experiment photo,
+        verified step logs, and observation table/graph data to generate a structured School/University
+        Lab Report ready for PDF export and submission to teachers/lecturers.
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LabReportGenerateRequest'
+      responses:
+        '200':
+          description: Structured Academic Lab Report ready for preview edit and PDF download
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LabReportGenerateResponse'
+
+  /sync/offline-progress:
+    post:
+      summary: Idempotent synchronization for offline experiment completions, quiz answers & badges (USP #10)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OfflineProgressSyncRequest'
+      responses:
+        '200':
+          description: Synced offline completions and awarded badges/XP
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OfflineProgressSyncResponse'
+
+components:
+  schemas:
+    AgeAdaptiveLevelEnum:
+      type: string
+      enum: [SD_ELEMENTARY, SMP_LOWER_SEC, SMA_UPPER_SEC, HIGHER_ED_UNI]
+      description: >
+        4-Tier Age-Adaptive Filter:
+        - SD_ELEMENTARY: Visual storytelling & phenomenon discovery
+        - SMP_LOWER_SEC: Causal concepts & guided observation
+        - SMA_UPPER_SEC: Physics/Chemistry LaTeX formulas, Independent/Dependent/Control Variables, & Analytical Graphs
+        - HIGHER_ED_UNI: University scientific method, equation derivation, multi-trial regression & error analysis
+
+    InventoryScanRequest:
+      type: object
+      required: [image_base64, mime_type, region]
+      properties:
+        image_base64:
+          type: string
+          description: Client-compressed workspace photo (< 400KB WebP/JPEG)
+        mime_type:
+          type: string
+          enum: [image/webp, image/jpeg, image/png]
+        region:
+          type: string
+          enum: [ID, MY]
+          default: ID
+
+    InventoryItemInput:
+      type: object
+      required: [material_slug, quantity, unit]
+      properties:
+        material_slug:
+          type: string
+          example: plastic_bottle_pet_600ml
+        quantity:
+          type: number
+          example: 2
+        unit:
+          type: string
+          example: pcs
+
+    InventoryItemDTO:
+      type: object
+      required: [material_slug, name_local, category, quantity, unit, confidence]
+      properties:
+        material_slug:
+          type: string
+          example: sodium_bicarbonate
+        name_local:
+          type: string
+          example: "Soda Kue (ID) / Serbuk Penaik (MY)"
+        category:
+          type: string
+          enum: [RECYCLED, KITCHEN_CHEMICAL, HOUSEHOLD_TOOL, ELECTRONICS, LAB_APPARATUS]
+        quantity:
+          type: number
+          example: 1
+        unit:
+          type: string
+          example: pack
+        confidence:
+          type: number
+          example: 0.96
+
+    SafetyAlertDTO:
+      type: object
+      required: [rule_code, severity, involved_materials, message_local]
+      properties:
+        rule_code:
+          type: string
+          example: HAZ_CO_LOCATED_BLEACH_AND_ACID_CLEANER
+        severity:
+          type: string
+          enum: [SAFE, ADULT_SUPERVISION, CRITICAL_CO_LOCATION_WARNING, CRITICAL_HAZARD_BLOCKED]
+        involved_materials:
+          type: array
+          items:
+            type: string
+        message_local:
+          type: string
+          example: "PERINGATAN MERAH: Terdeteksi Pembersih Lantai Asam dan Pemutih Pakaian di satu area! Jangan pernah mencampur dua bahan ini karena menghasilkan gas klorin beracun!"
+
+    InventoryScanResponse:
+      type: object
+      required: [scan_id, region, detected_items, active_workspace_hazards]
+      properties:
+        scan_id:
+          type: string
+          format: uuid
+        region:
+          type: string
+          enum: [ID, MY]
+        detected_items:
+          type: array
+          items:
+            $ref: '#/components/schemas/InventoryItemDTO'
+        active_workspace_hazards:
+          type: array
+          items:
+            $ref: '#/components/schemas/SafetyAlertDTO'
+
+    RecommendationMatchRequest:
+      type: object
+      required: [region, curriculum_code, age_adaptive_level, grade_level, user_role, inventory_items]
+      properties:
+        region:
+          type: string
+          enum: [ID, MY]
+        curriculum_code:
+          type: string
+          enum: [ID_KURIKULUM_MERDEKA, ID_DIKTI_HIGHER_ED, MY_KSSR, MY_KSSM, MY_MATRIKULASI_UNI]
+        age_adaptive_level:
+          $ref: '#/components/schemas/AgeAdaptiveLevelEnum'
+        grade_level:
+          type: string
+          example: "SMA_FASE_E"
+        user_role:
+          type: string
+          enum: [STUDENT, TEACHER]
+        inventory_items:
+          type: array
+          items:
+            $ref: '#/components/schemas/InventoryItemInput'
+
+    FunctionalMaterialSubstituteDTO:
+      type: object
+      required: [missing_material_slug, missing_name_local, substitute_material_slug, substitute_name_local, shared_scientific_principle, adaptation_steps]
+      properties:
+        missing_material_slug:
+          type: string
+          example: pvc_pipe_half_inch
+        missing_name_local:
+          type: string
+          example: "Pipa PVC 1/2 Inci / Paip PVC"
+        substitute_material_slug:
+          type: string
+          example: thick_plastic_straw
+        substitute_name_local:
+          type: string
+          example: "Sedotan Plastik Tebal atau Gulungan Karton Bekas"
+        shared_scientific_principle:
+          type: string
+          example: "Prinsip Konduksi Aliran Udara & Tekanan Fluida Silindris (Bernoulli/Poiseuille)"
+        adaptation_steps:
+          type: array
+          items:
+            type: string
+
+    LocalSourcingItemDTO:
+      type: object
+      required: [material_slug, name_local, missing_quantity, unit, currency, est_price_int, display_price, recommended_stores, maps_search_url, marketplace_search_url]
+      properties:
+        material_slug:
+          type: string
+          example: balloon_latex
+        name_local:
+          type: string
+          example: "Balon Karet / Belon Getah"
+        missing_quantity:
+          type: number
+          example: 1
+        unit:
+          type: string
+          example: pcs
+        currency:
+          type: string
+          enum: [IDR, MYR_SEN]
+        est_price_int:
+          type: integer
+          example: 2000
+        display_price:
+          type: string
+          example: "Rp 2.000"
+        recommended_stores:
+          type: array
+          items:
+            type: string
+          example: ["Warung Kelontong", "Toko Alat Tulis", "Indomaret/Alfamart"]
+        maps_search_url:
+          type: string
+          example: "https://www.google.com/maps/search/?api=1&query=Toko+Alat+Tulis+terdekat"
+        marketplace_search_url:
+          type: string
+          example: "https://www.tokopedia.com/search?q=balon+karet"
+
+    ExperimentRecommendationCardDTO:
+      type: object
+      required: [experiment_slug, title_local, match_tier, match_percentage, age_adaptive_level, curriculum_badge, safety_severity, functional_substitutes, missing_local_shop_items]
+      properties:
+        experiment_slug:
+          type: string
+          example: rangkaian-listrik-baterai-kaleng-ar
+        title_local:
+          type: string
+          example: "Rangkaian Listrik Sederhana & Simulasi AR Arus Elektron"
+        match_tier:
+          type: string
+          enum: [STRICT_100, DIY_SUBSTITUTE, LOCAL_MICRO_SHOP]
+        match_percentage:
+          type: integer
+          example: 100
+        age_adaptive_level:
+          $ref: '#/components/schemas/AgeAdaptiveLevelEnum'
+        curriculum_badge:
+          type: string
+          example: "Kurikulum Merdeka SMA Fase E / KSSM Tingkatan 4: Hukum Ohm & Rangkaian Arus Searah"
+        safety_severity:
+          type: string
+          enum: [SAFE, ADULT_SUPERVISION]
+        functional_substitutes:
+          type: array
+          items:
+            $ref: '#/components/schemas/FunctionalMaterialSubstituteDTO'
+        missing_local_shop_items:
+          type: array
+          items:
+            $ref: '#/components/schemas/LocalSourcingItemDTO'
+
+    RecommendationMatchResponse:
+      type: object
+      required: [region, strict_100_matches, diy_substitute_matches, local_micro_shop_matches, blocked_hazard_alerts]
+      properties:
+        region:
+          type: string
+          enum: [ID, MY]
+        strict_100_matches:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExperimentRecommendationCardDTO'
+        diy_substitute_matches:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExperimentRecommendationCardDTO'
+        local_micro_shop_matches:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExperimentRecommendationCardDTO'
+        blocked_hazard_alerts:
+          type: array
+          items:
+            $ref: '#/components/schemas/SafetyAlertDTO'
+
+    ScientificVariablesAndGraphSchemaDTO:
+      type: object
+      description: Populated for SMA_UPPER_SEC and HIGHER_ED_UNI levels (USP #5)
+      required: [formulas_latex, independent_variable, dependent_variable, control_variables, x_axis_label, y_axis_label, expected_trend]
+      properties:
+        formulas_latex:
+          type: array
+          items:
+            type: string
+          example: ["I = \\frac{V}{R}", "P = V \\cdot I"]
+        independent_variable:
+          type: string
+          example: "Tegangan Baterai (V)"
+        dependent_variable:
+          type: string
+          example: "Kuat Arus Listrik (I) / Kecerahan LED"
+        control_variables:
+          type: array
+          items:
+            type: string
+          example: ["Panjang dan jenis penghantar", "Hambatan beban (R)"]
+        x_axis_label:
+          type: string
+          example: "Tegangan V (Volt)"
+        y_axis_label:
+          type: string
+          example: "Arus I (mA)"
+        expected_trend:
+          type: string
+          enum: [LINEAR_PROPORTIONAL, INVERSE, EXPONENTIAL, POLYNOMIAL]
+
+    AROverlaySimulationDTO:
+      type: object
+      required: [overlay_type, caption_local, vector_paths]
+      properties:
+        overlay_type:
+          type: string
+          enum: [NONE, ELECTRON_FLOW, FORCE_VECTOR, FLUID_PRESSURE, MAGNETIC_FIELD, MOLECULAR_REACTION]
+        caption_local:
+          type: string
+          example: "Simulasi AR: Aliran elektron bergerak dari kutub negatif (-) ke positif (+), sedangkan arus konvensional mengalir dari (+) ke (-)."
+        vector_paths:
+          type: array
+          items:
+            type: object
+            required: [label, start_x_norm, start_y_norm, end_x_norm, end_y_norm, color_hex, animation_style]
+            properties:
+              label:
+                type: string
+                example: "Aliran Arus Listrik (I)"
+              start_x_norm:
+                type: number
+                example: 0.25
+              start_y_norm:
+                type: number
+                example: 0.42
+              end_x_norm:
+                type: number
+                example: 0.78
+              end_y_norm:
+                type: number
+                example: 0.42
+              color_hex:
+                type: string
+                example: "#00E5FF"
+              animation_style:
+                type: string
+                enum: [FLOWING_PARTICLES, PULSING_ARROW, PRESSURE_WAVE]
+
+    STEMExperimentModuleDTO:
+      type: object
+      required: [experiment_slug, title_local, age_adaptive_level, curriculum_alignment, stem_concepts, safety_checks, steps, reflection_questions, offline_pack_version]
+      properties:
+        experiment_slug:
+          type: string
+        title_local:
+          type: string
+        age_adaptive_level:
+          $ref: '#/components/schemas/AgeAdaptiveLevelEnum'
+        curriculum_alignment:
+          type: object
+          required: [curriculum_code, grade_level, competency_code, learning_objective]
+          properties:
+            curriculum_code:
+              type: string
+            grade_level:
+              type: string
+            competency_code:
+              type: string
+            learning_objective:
+              type: string
+        stem_concepts:
+          type: object
+          required: [science, technology, engineering, mathematics]
+          properties:
+            science:
+              type: string
+            technology:
+              type: string
+            engineering:
+              type: string
+            mathematics:
+              type: string
+        scientific_variables_and_graph:
+          $ref: '#/components/schemas/ScientificVariablesAndGraphSchemaDTO'
+        safety_checks:
+          type: array
+          items:
+            $ref: '#/components/schemas/SafetyAlertDTO'
+        steps:
+          type: array
+          items:
+            type: object
+            required: [step_number, instruction, requires_vision_verification, vision_verification_prompt, default_ar_overlay, checkable]
+            properties:
+              step_number:
+                type: integer
+              instruction:
+                type: string
+              requires_vision_verification:
+                type: boolean
+              vision_verification_prompt:
+                type: string
+              default_ar_overlay:
+                $ref: '#/components/schemas/AROverlaySimulationDTO'
+              checkable:
+                type: boolean
+        reflection_questions:
+          type: array
+          items:
+            type: object
+            required: [question_id, prompt, options, correct_index, explanation]
+            properties:
+              question_id:
+                type: string
+              prompt:
+                type: string
+              options:
+                type: array
+                items:
+                  type: string
+              correct_index:
+                type: integer
+              explanation:
+                type: string
+        offline_pack_version:
+          type: string
+          example: "1.1.0"
+
+    StepVisionVerifyRequest:
+      type: object
+      required: [image_base64, mime_type, region, age_adaptive_level]
+      properties:
+        image_base64:
+          type: string
+        mime_type:
+          type: string
+          enum: [image/webp, image/jpeg, image/png]
+        region:
+          type: string
+          enum: [ID, MY]
+        age_adaptive_level:
+          $ref: '#/components/schemas/AgeAdaptiveLevelEnum'
+
+    StepVisionVerifyResponse:
+      type: object
+      required: [step_number, is_verified_correct, confidence, feedback_message_local, can_proceed_to_next_step, ar_overlay_simulation]
+      properties:
+        step_number:
+          type: integer
+          example: 1
+        is_verified_correct:
+          type: boolean
+          example: true
+        confidence:
+          type: number
+          example: 0.94
+        feedback_message_local:
+          type: string
+          example: "Langkah benar! Kabel merah sudah terhubung ke kutub positif (+) baterai. Lanjut ke langkah 2!"
+        can_proceed_to_next_step:
+          type: boolean
+          example: true
+        ar_overlay_simulation:
+          $ref: '#/components/schemas/AROverlaySimulationDTO'
+
+    LabReportGenerateRequest:
+      type: object
+      required: [region, age_adaptive_level, student_name, institution_name, class_or_nim, result_photo_base64, observation_data_rows, reflection_answers]
+      properties:
+        region:
+          type: string
+          enum: [ID, MY]
+        age_adaptive_level:
+          $ref: '#/components/schemas/AgeAdaptiveLevelEnum'
+        student_name:
+          type: string
+          example: "Budi Santoso"
+        institution_name:
+          type: string
+          example: "SMAN 1 Bandung / Universiti Malaya"
+        class_or_nim:
+          type: string
+          example: "Kelas XI IPA 2"
+        instructor_name:
+          type: string
+          example: "Ibu Siti Aminah, S.Pd."
+        result_photo_base64:
+          type: string
+        observation_data_rows:
+          type: array
+          items:
+            type: object
+            required: [trial_number, x_value, y_value, notes]
+            properties:
+              trial_number:
+                type: integer
+              x_value:
+                type: number
+              y_value:
+                type: number
+              notes:
+                type: string
+        reflection_answers:
+          type: array
+          items:
+            type: string
+
+    LabReportGenerateResponse:
+      type: object
+      required: [report_id, title_local, objective_local, theoretical_summary, materials_used_list, procedure_summary, result_analysis_discussion, conclusion_local, generated_at_utc]
+      properties:
+        report_id:
+          type: string
+          format: uuid
+        title_local:
+          type: string
+        objective_local:
+          type: string
+        theoretical_summary:
+          type: string
+        variables_summary:
+          type: string
+        materials_used_list:
+          type: array
+          items:
+            type: string
+        procedure_summary:
+          type: array
+          items:
+            type: string
+        result_analysis_discussion:
+          type: string
+          description: AI-synthesized scientific analysis of the final photo & observation data
+        conclusion_local:
+          type: string
+        generated_at_utc:
+          type: string
+          format: date-time
+
+    OfflineProgressSyncRequest:
+      type: object
+      required: [completions]
+      properties:
+        completions:
+          type: array
+          items:
+            type: object
+            required: [client_mutation_id, experiment_slug, completed_at_utc, checked_steps, quiz_score, optional_photo_base64]
+            properties:
+              client_mutation_id:
+                type: string
+                format: uuid
+              experiment_slug:
+                type: string
+              completed_at_utc:
+                type: string
+                format: date-time
+              checked_steps:
+                type: array
+                items:
+                  type: integer
+              quiz_score:
+                type: integer
+              optional_photo_base64:
+                type: string
+                nullable: true
+
+    OfflineProgressSyncResponse:
+      type: object
+      required: [synced_count, total_xp, newly_awarded_badges]
+      properties:
+        synced_count:
+          type: integer
+        total_xp:
+          type: integer
+        newly_awarded_badges:
+          type: array
+          items:
+            type: object
+            required: [badge_code, title_local, icon_slug]
+            properties:
+              badge_code:
+                type: string
+              title_local:
+                type: string
+              icon_slug:
+                type: string

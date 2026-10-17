@@ -1,0 +1,32 @@
+version: '3'
+
+tasks:
+  default:
+    desc: List all available tasks
+    cmds:
+      - task --list
+
+  dev:
+    desc: Start development environment
+    cmds:
+      - echo "Starting development environment..."
+
+  build:
+    desc: Build all services and apps
+    cmds:
+      - echo "Building all services..."
+
+  test:
+    desc: Run tests across monorepo
+    cmds:
+      - echo "Running tests..."
+
+  infra:up:
+    desc: Start local infrastructure containers
+    cmds:
+      - docker compose up -d
+
+  infra:down:
+    desc: Stop local infrastructure containers
+    cmds:
+      - docker compose down

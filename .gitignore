@@ -1,0 +1,56 @@
+# ==============================================================================
+# .gitignore — RekaSains Global Git Ignore
+# ==============================================================================
+
+# OS generated files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+
+# Dependencies
+node_modules/
+vendor/
+.venv/
+env/
+
+# Build artifacts
+dist/
+build/
+output/
+bin/
+target/
+.turbo/
+.next/
+.astro/
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.crt
+
+# Terraform state
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+
+# Logs
+logs/
+*.log
+
+# Databases & local state
+*.sqlite
+*.sqlite3
+*.db
+tmp/
+temp/
+
+# Archives
+*.zip
