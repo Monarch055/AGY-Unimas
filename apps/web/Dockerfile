@@ -2,16 +2,21 @@
 FROM node:22-alpine AS builder
 WORKDIR /workspace
 
-# Copy workspace config and package definitions
-COPY package.json ./
+# 1. Copy workspace configuration and package manifests first to leverage Docker layer caching
+COPY package.json package-lock.json ./
+COPY packages/shared-types/package.json ./packages/shared-types/
+COPY packages/shared-core/package.json ./packages/shared-core/
+COPY apps/web/package.json ./apps/web/
+
+# 2. Install workspace dependencies (CACHED unless package.json / package-lock.json changes)
+RUN npm install
+
+# 3. Copy source code after dependencies are installed
 COPY packages/shared-types ./packages/shared-types
 COPY packages/shared-core ./packages/shared-core
 COPY apps/web ./apps/web
 
-# Install all workspace dependencies
-RUN npm install
-
-# Build Next.js application
+# 4. Build Next.js application
 WORKDIR /workspace/apps/web
 RUN npm run build
 

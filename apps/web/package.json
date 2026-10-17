@@ -11,8 +11,8 @@
     "test": "node --test tests/web-engine.test.mjs"
   },
   "dependencies": {
-    "@rekasains/shared-core": "workspace:*",
-    "@rekasains/shared-types": "workspace:*",
+    "@rekasains/shared-core": "*",
+    "@rekasains/shared-types": "*",
     "next": "^14.2.15",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
