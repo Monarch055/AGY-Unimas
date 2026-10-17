@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import type { InventoryItemDTO, RegionCode, SafetyAlertDTO } from '@rekasains/shared-types';
 import { evaluateClientCoLocationHazards, scanWorkspacePhoto } from '../lib/api-client';
 import { categoryLabel, severityLabel } from '../lib/labels';
+import { MATERIAL_TEMPLATES, templateName, templateToItem } from '../lib/materials';
 import type { PreparedImage } from '../lib/image';
 import { PhotoInput } from './PhotoInput';
 import { Button, EmptyState, Panel, Pill, inputClass } from './ui';
@@ -242,12 +243,42 @@ export function WorkspaceScannerAndHazardBanner({
           </div>
         )}
 
+        <div className="mt-4 border-t border-stone-100 pt-4">
+          <p className="text-xs font-medium text-stone-500">Tambah cepat dari katalog</p>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {MATERIAL_TEMPLATES.map((t) => {
+              const owned = items.find((i) => i.material_slug === t.slug);
+              const hazardous = HAZARDOUS_SLUGS.has(t.slug);
+              return (
+                <button
+                  key={t.slug}
+                  type="button"
+                  onClick={() =>
+                    owned
+                      ? changeQty(t.slug, 1)
+                      : updateItems([...items, templateToItem(t, region, 1)])
+                  }
+                  className={`rounded-full border px-2.5 py-1 text-xs transition-colors ${
+                    owned
+                      ? 'border-stone-900 bg-stone-900 text-white'
+                      : hazardous
+                      ? 'border-red-200 text-red-700 hover:bg-red-50'
+                      : 'border-stone-300 text-stone-700 hover:bg-stone-100'
+                  }`}
+                >
+                  {owned ? `${templateName(t, region)} · ${owned.quantity}` : `+ ${templateName(t, region)}`}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
         <form onSubmit={addItem} className="mt-4 flex flex-wrap gap-2 border-t border-stone-100 pt-4">
           <input
             type="text"
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
-            placeholder="Tambah bahan manual, mis. cuka dapur"
+            placeholder="Bahan lain yang tidak ada di daftar, mis. gunting"
             className={`${inputClass} min-w-[200px] flex-1`}
           />
           <input
@@ -261,7 +292,7 @@ export function WorkspaceScannerAndHazardBanner({
           <Button type="submit">Tambah</Button>
         </form>
         <p className="mt-2 text-xs text-stone-400">
-          Bahan manual yang tidak ada di katalog belum dipakai untuk pencocokan eksperimen.
+          Bahan di luar katalog tetap dikirim ke AI saat mencari eksperimen.
         </p>
       </Panel>
     </div>
